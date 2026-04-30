@@ -38,7 +38,7 @@ local Aspect = Instance.new("UIAspectRatioConstraint")
 Aspect.AspectRatio = 3.5 
 Aspect.Parent = LogoFrame
 
--- :p
+
 local AspectRatio = Instance.new("UIAspectRatioConstraint")
 AspectRatio.AspectRatio = 4 
 AspectRatio.Parent = LogoFrame
@@ -73,7 +73,7 @@ local function createNeonLine(parent, size, position)
     line.ZIndex = 20
     line.Parent = parent
 
-   
+    
     local stroke = Instance.new("UIStroke")
     stroke.Color = Color3.fromRGB(255, 0, 0)
     stroke.Thickness = 3
@@ -98,7 +98,7 @@ BackgroundImage.BackgroundTransparency = 1
 BackgroundImage.Image = "rbxassetid://130192521603899"
 BackgroundImage.ImageTransparency = 0.2 
 BackgroundImage.ScaleType = Enum.ScaleType.Crop
-BackgroundImage.ZIndex = 0
+BackgroundImage.ZIndex = 0 
 BackgroundImage.Parent = MainFrame
 
 
@@ -178,7 +178,7 @@ local function createKey(text, x, y, w, h, keyCodeName)
     return key
 end
 
--- Got this from soggy :P
+-- Credits to soggy :p
 createKey("Esc", 0, 0, 35, 28, "Escape")
 local nums = {"One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Zero"}
 for i, v in ipairs(nums) do createKey(tostring(i % 10), 38 + (i-1)*31, 0, 28, 28, v) end
@@ -210,6 +210,7 @@ local cc = Lighting:FindFirstChild("Highkey_CC") or Instance.new("ColorCorrectio
 cc.Name = "Highkey_CC"
 
 UserInputService.InputBegan:Connect(function(input, processed)
+    
     if input.KeyCode == Enum.KeyCode.M and not processed then
         config.guiVisible = not config.guiVisible
 
@@ -217,7 +218,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
             
             MainFrame.Visible = true
             ControlCanvas.GroupTransparency = 1
-
             TweenService:Create(
                 ControlCanvas,
                 TweenInfo.new(0.3),
@@ -230,13 +230,26 @@ UserInputService.InputBegan:Connect(function(input, processed)
                 TweenInfo.new(0.3),
                 {GroupTransparency = 1}
             )
-
             tween:Play()
-
             tween.Completed:Connect(function()
-                MainFrame.Visible = false
+                if not config.guiVisible then 
+                    MainFrame.Visible = false
+                end
             end)
         end
+    end
+
+    
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        local k = keyObjects[input.KeyCode.Name]
+        if k then 
+            k.BackgroundColor3 = config.lavender 
+            k.TextColor3 = Color3.new(0, 0, 0) 
+        end
+    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then 
+        LMB.BackgroundColor3 = config.lavender
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then 
+        RMB.BackgroundColor3 = config.lavender
     end
 end)
 
@@ -310,7 +323,7 @@ SkyBtn.MouseButton1Click:Connect(function()
         local sky = Lighting:FindFirstChild("HighkeySky")
         if sky then sky:Destroy() end
 
-        
+       
         local atm = Lighting:FindFirstChild("Highkey_Atmosphere")
         if atm then atm:Destroy() end
 
@@ -340,11 +353,11 @@ end)
 RunService.RenderStepped:Connect(function(dt)
     local t = tick()
     
-   
+    
     config.intensity = config.active and math.min(config.intensity + dt * 0.5, 1) or math.max(config.intensity - dt * 0.5, 0)
     
     if config.intensity > 0 then
-       
+        
         config.hue = (t * 0.4) % 1
         cc.TintColor = Color3.new(1,1,1):Lerp(Color3.fromHSV(config.hue, 0.8, 1), config.intensity)
         
