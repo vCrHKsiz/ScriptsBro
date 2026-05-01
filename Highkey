@@ -162,14 +162,28 @@ local SoundBtn   = createBtn("Play Sound", UDim2.new(0.5, -130, 0, 170))
 
 local Board = Instance.new("Frame")
 Board.Name = "InputOverlayBoard"
-Board.Size = UDim2.new(0, 450, 0, 180) 
-
-
-Board.AnchorPoint = Vector2.new(0, 1) 
-Board.Position = UDim2.new(0, 10, 1, -10) 
-
-Board.BackgroundTransparency = 1
+Board.Size = UDim2.new(0, 450, 0, 180)
+Board.AnchorPoint = Vector2.new(0, 1)
+Board.Position = UDim2.new(0, 10, 1, -10)
+Board.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Board.BackgroundTransparency = 0.2
+Board.BorderSizePixel = 0
 Board.Parent = HighkeyHub
+
+local BoardCorner = Instance.new("UICorner", Board)
+BoardCorner.CornerRadius = UDim.new(0, 10)
+
+local BoardStroke = Instance.new("UIStroke", Board)
+BoardStroke.Color = config.lavender
+BoardStroke.Thickness = 1.5
+BoardStroke.Transparency = 0.6
+
+local BoardPadding = Instance.new("UIPadding", Board)
+BoardPadding.PaddingTop = UDim.new(0, 6)
+BoardPadding.PaddingLeft = UDim.new(0, 6)
+BoardPadding.PaddingBottom = UDim.new(0, 6)
+BoardPadding.PaddingRight = UDim.new(0, 6)
+
 
 local keyObjects = {}
 local function createKey(text, x, y, w, h, keyCodeName)
