@@ -3,24 +3,23 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
-
 
 local config = {
     active = false,
     skyActive = false,
     intensity = 0,
     hue = 0,
-    originalFOV = camera.FieldOfView, 
+    originalFOV = camera.FieldOfView,
     guiVisible = true,
+    expanded = true,
     fading = false,
-    targetSkyID = "rbxassetid://130349189862079",
     lavender = Color3.fromRGB(200, 160, 255),
     bg_dark = Color3.fromRGB(15, 15, 15),
     key_bg = Color3.fromRGB(30, 30, 30)
-    }
-
+}
 
 local originalLighting = {
     ClockTime = Lighting.ClockTime,
@@ -31,47 +30,35 @@ local originalLighting = {
     OutdoorAmbient = Lighting.OutdoorAmbient,
 }
 
-
 local HighkeyHub = Instance.new("ScreenGui")
 HighkeyHub.Name = "HighkeyHub"
 HighkeyHub.ResetOnSpawn = false
 HighkeyHub.Parent = player:WaitForChild("PlayerGui")
 
-local LogoFrame = Instance.new("Frame") 
-LogoFrame.Name = "LogoFrame"
-LogoFrame.BackgroundTransparency = 1
-LogoFrame.Parent = HighkeyHub
 
-
-local Aspect = Instance.new("UIAspectRatioConstraint")
-Aspect.AspectRatio = 3.5 
-Aspect.Parent = LogoFrame
-
-
-local AspectRatio = Instance.new("UIAspectRatioConstraint")
-AspectRatio.AspectRatio = 4 
-AspectRatio.Parent = LogoFrame
-
+task.defer(function()
+    task.wait(1)
+    game.TextChatService.TextChannels.RBXSystem:DisplaySystemMessage(
+        "<font color='#AA00FF'>  ╔  Yoggs ╝ [You are highkey]</font>"
+    )
+end)
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 260)
+MainFrame.Size = UDim2.new(0, 300, 0, 40) 
 MainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
 MainFrame.BackgroundTransparency = 1
 MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true 
+MainFrame.ClipsDescendants = true
 MainFrame.Parent = HighkeyHub
 
-local Corner = Instance.new("UICorner", MainFrame)
-Corner.CornerRadius = UDim.new(0, 8)
-
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
 local Stroke = Instance.new("UIStroke")
 Stroke.Color = config.lavender
 Stroke.Thickness = 2
 Stroke.Transparency = 0.5
 Stroke.Parent = MainFrame
-
 
 local function createNeonLine(parent, size, position)
     local line = Instance.new("Frame")
@@ -81,50 +68,310 @@ local function createNeonLine(parent, size, position)
     line.BorderSizePixel = 0
     line.ZIndex = 20
     line.Parent = parent
-
-    
     local stroke = Instance.new("UIStroke")
     stroke.Color = Color3.fromRGB(255, 0, 0)
     stroke.Thickness = 3
     stroke.Transparency = 0.3
     stroke.Parent = line
-
     return line
 end
-
 
 local topLine = createNeonLine(MainFrame, UDim2.new(1, 0, 0, 2), UDim2.new(0, 0, 0, 0))
 local bottomLine = createNeonLine(MainFrame, UDim2.new(1, 0, 0, 2), UDim2.new(0, 0, 1, -2))
 local leftLine = createNeonLine(MainFrame, UDim2.new(0, 2, 1, 0), UDim2.new(0, 0, 0, 0))
 local rightLine = createNeonLine(MainFrame, UDim2.new(0, 2, 1, 0), UDim2.new(1, -2, 0, 0))
 
-
 local BackgroundImage = Instance.new("ImageLabel")
-BackgroundImage.Name = "BackgroundImage"
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
-BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
 BackgroundImage.BackgroundTransparency = 1
 BackgroundImage.Image = "rbxassetid://130192521603899"
-BackgroundImage.ImageTransparency = 0.2 
+BackgroundImage.ImageTransparency = 0.2
 BackgroundImage.ScaleType = Enum.ScaleType.Crop
-BackgroundImage.ZIndex = 0 
+BackgroundImage.ZIndex = 0
 BackgroundImage.Parent = MainFrame
-
 
 local ControlCanvas = Instance.new("CanvasGroup")
 ControlCanvas.Size = UDim2.new(1, 0, 1, 0)
 ControlCanvas.BackgroundTransparency = 1
-ControlCanvas.ZIndex = 10 
+ControlCanvas.ZIndex = 10
 ControlCanvas.Parent = MainFrame
 
+
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 40)
+Header.BackgroundTransparency = 1
+Header.Parent = ControlCanvas
+
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Size = UDim2.new(1, -80, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "HIGHKEY RETARDED"
 Title.TextColor3 = Color3.fromRGB(170, 0, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
-Title.Parent = ControlCanvas
+Title.TextSize = 16
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+local ExpandBtn = Instance.new("TextButton")
+ExpandBtn.Size = UDim2.new(0, 70, 0, 24)
+ExpandBtn.Position = UDim2.new(1, -78, 0.5, -12)
+ExpandBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 60)
+ExpandBtn.Text = "▼ hide"
+ExpandBtn.TextColor3 = Color3.fromRGB(200, 100, 255)
+ExpandBtn.Font = Enum.Font.GothamBold
+ExpandBtn.TextSize = 11
+ExpandBtn.Parent = Header
+Instance.new("UICorner", ExpandBtn).CornerRadius = UDim.new(0, 4)
+
+
+local Body = Instance.new("Frame")
+Body.Name = "Body"
+Body.Size = UDim2.new(1, 0, 1, -40)
+Body.Position = UDim2.new(0, 0, 0, 40)
+Body.BackgroundTransparency = 1
+Body.Parent = ControlCanvas
+
+local function createBtn(text, pos)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 260, 0, 40)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 16
+    btn.Parent = Body
+    Instance.new("UICorner", btn)
+    return btn
+end
+
+local HighkeyBtn = createBtn("Highkey Effect: OFF", UDim2.new(0.5, -130, 0, 10))
+local SkyBtn = createBtn("Skybox: OFF", UDim2.new(0.5, -130, 0, 60))
+
+
+local DropdownHeader = Instance.new("TextButton")
+DropdownHeader.Size = UDim2.new(0, 260, 0, 40)
+DropdownHeader.Position = UDim2.new(0.5, -130, 0, 110)
+DropdownHeader.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+DropdownHeader.Text = "▼  Player Lookup"
+DropdownHeader.TextColor3 = Color3.new(1, 1, 1)
+DropdownHeader.Font = Enum.Font.SourceSansBold
+DropdownHeader.TextSize = 16
+DropdownHeader.Parent = Body
+Instance.new("UICorner", DropdownHeader)
+
+local DropdownBody = Instance.new("Frame")
+DropdownBody.Size = UDim2.new(0, 260, 0, 180)
+DropdownBody.Position = UDim2.new(0.5, -130, 0, 158)
+DropdownBody.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+DropdownBody.BorderSizePixel = 0
+DropdownBody.Visible = false
+DropdownBody.Parent = Body
+Instance.new("UICorner", DropdownBody).CornerRadius = UDim.new(0, 6)
+
+local SearchBox = Instance.new("TextBox")
+SearchBox.Size = UDim2.new(1, -60, 0, 30)
+SearchBox.Position = UDim2.new(0, 8, 0, 8)
+SearchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SearchBox.Text = ""
+SearchBox.PlaceholderText = "Username or ID..."
+SearchBox.TextColor3 = Color3.new(1, 1, 1)
+SearchBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+SearchBox.Font = Enum.Font.Gotham
+SearchBox.TextSize = 12
+SearchBox.Parent = DropdownBody
+Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 5)
+
+local SearchBtn = Instance.new("TextButton")
+SearchBtn.Size = UDim2.new(0, 44, 0, 30)
+SearchBtn.Position = UDim2.new(1, -52, 0, 8)
+SearchBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 140)
+SearchBtn.Text = "Go"
+SearchBtn.TextColor3 = Color3.new(1, 1, 1)
+SearchBtn.Font = Enum.Font.GothamBold
+SearchBtn.TextSize = 13
+SearchBtn.Parent = DropdownBody
+Instance.new("UICorner", SearchBtn).CornerRadius = UDim.new(0, 5)
+
+
+local AvatarImg = Instance.new("ImageLabel")
+AvatarImg.Size = UDim2.new(0, 50, 0, 50)
+AvatarImg.Position = UDim2.new(0, 8, 0, 46)
+AvatarImg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+AvatarImg.Image = ""
+AvatarImg.Parent = DropdownBody
+Instance.new("UICorner", AvatarImg).CornerRadius = UDim.new(0, 6)
+
+local DisplayNameLabel = Instance.new("TextLabel")
+DisplayNameLabel.Size = UDim2.new(1, -70, 0, 18)
+DisplayNameLabel.Position = UDim2.new(0, 66, 0, 48)
+DisplayNameLabel.BackgroundTransparency = 1
+DisplayNameLabel.Text = ""
+DisplayNameLabel.TextColor3 = Color3.new(1, 1, 1)
+DisplayNameLabel.Font = Enum.Font.GothamBold
+DisplayNameLabel.TextSize = 13
+DisplayNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+DisplayNameLabel.Parent = DropdownBody
+
+local UsernameLabel = Instance.new("TextLabel")
+UsernameLabel.Size = UDim2.new(1, -70, 0, 14)
+UsernameLabel.Position = UDim2.new(0, 66, 0, 68)
+UsernameLabel.BackgroundTransparency = 1
+UsernameLabel.Text = ""
+UsernameLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+UsernameLabel.Font = Enum.Font.Gotham
+UsernameLabel.TextSize = 11
+UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+UsernameLabel.Parent = DropdownBody
+
+local IDLabel = Instance.new("TextLabel")
+IDLabel.Size = UDim2.new(1, -16, 0, 14)
+IDLabel.Position = UDim2.new(0, 8, 0, 104)
+IDLabel.BackgroundTransparency = 1
+IDLabel.Text = ""
+IDLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+IDLabel.Font = Enum.Font.Gotham
+IDLabel.TextSize = 11
+IDLabel.TextXAlignment = Enum.TextXAlignment.Left
+IDLabel.Parent = DropdownBody
+
+local FriendsLabel = Instance.new("TextLabel")
+FriendsLabel.Size = UDim2.new(1, -16, 0, 14)
+FriendsLabel.Position = UDim2.new(0, 8, 0, 120)
+FriendsLabel.BackgroundTransparency = 1
+FriendsLabel.Text = ""
+FriendsLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+FriendsLabel.Font = Enum.Font.Gotham
+FriendsLabel.TextSize = 11
+FriendsLabel.TextXAlignment = Enum.TextXAlignment.Left
+FriendsLabel.Parent = DropdownBody
+
+local ProfileBtn = Instance.new("TextButton")
+ProfileBtn.Size = UDim2.new(1, -16, 0, 24)
+ProfileBtn.Position = UDim2.new(0, 8, 0, 148)
+ProfileBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 140)
+ProfileBtn.Text = "View Roblox Profile"
+ProfileBtn.TextColor3 = Color3.new(1, 1, 1)
+ProfileBtn.Font = Enum.Font.GothamBold
+ProfileBtn.TextSize = 12
+ProfileBtn.Visible = false
+ProfileBtn.Parent = DropdownBody
+Instance.new("UICorner", ProfileBtn).CornerRadius = UDim.new(0, 5)
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1, -16, 0, 30)
+StatusLabel.Position = UDim2.new(0, 8, 0, 46)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = ""
+StatusLabel.TextColor3 = Color3.fromRGB(200, 100, 100)
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 12
+StatusLabel.TextWrapped = true
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.Parent = DropdownBody
+
+
+local dropdownOpen = false
+local COLLAPSED_HEIGHT = 40
+local EXPANDED_BASE = 230 
+local EXPANDED_WITH_DROPDOWN = 420
+
+local function setMainHeight(h)
+    TweenService:Create(MainFrame, TweenInfo.new(0.25), {Size = UDim2.new(0, 300, 0, h)}):Play()
+end
+
+ExpandBtn.MouseButton1Click:Connect(function()
+    config.expanded = not config.expanded
+    if config.expanded then
+        ExpandBtn.Text = "▼ hide"
+        Body.Visible = true
+        setMainHeight(dropdownOpen and EXPANDED_WITH_DROPDOWN or EXPANDED_BASE)
+    else
+        ExpandBtn.Text = "▶ show"
+        Body.Visible = false
+        setMainHeight(COLLAPSED_HEIGHT)
+    end
+end)
+
+DropdownHeader.MouseButton1Click:Connect(function()
+    dropdownOpen = not dropdownOpen
+    DropdownBody.Visible = dropdownOpen
+    DropdownHeader.Text = dropdownOpen and "▲  Player Lookup" or "▼  Player Lookup"
+    if config.expanded then
+        setMainHeight(dropdownOpen and EXPANDED_WITH_DROPDOWN or EXPANDED_BASE)
+    end
+end)
+
+
+setMainHeight(EXPANDED_BASE)
+
+local currentProfileId = nil
+
+local function lookupPlayer(query)
+    StatusLabel.Text = "Searching..."
+    DisplayNameLabel.Text = ""
+    UsernameLabel.Text = ""
+    IDLabel.Text = ""
+    FriendsLabel.Text = ""
+    AvatarImg.Image = ""
+    ProfileBtn.Visible = false
+    currentProfileId = nil
+
+    local userId = tonumber(query)
+
+   
+    if not userId then
+        local ok, result = pcall(function()
+            return Players:GetUserIdFromNameAsync(query)
+        end)
+        if ok then
+            userId = result
+        else
+            StatusLabel.Text = "User not found."
+            return
+        end
+    end
+
+    
+    local ok1, displayName = pcall(function() return Players:GetNameFromUserIdAsync(userId) end)
+    if not ok1 then StatusLabel.Text = "User not found." return end
+
+    
+    local thumbUrl = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. userId .. "&width=48&height=48&format=png"
+    AvatarImg.Image = thumbUrl
+
+    
+    local friendCount = "?"
+    local ok2, flist = pcall(function() return Players:GetFriendsAsync(userId) end)
+    if ok2 then
+        local count = 0
+        for _ in flist:GetCurrentPage() do count = count + 1 end
+        friendCount = tostring(count) .. (flist.IsFinished and "" or "+")
+    end
+
+    StatusLabel.Text = ""
+    DisplayNameLabel.Text = displayName
+    UsernameLabel.Text = "@" .. displayName
+    IDLabel.Text = "User ID: " .. tostring(userId)
+    FriendsLabel.Text = "Friends: " .. friendCount
+    currentProfileId = userId
+    ProfileBtn.Visible = true
+end
+
+SearchBtn.MouseButton1Click:Connect(function()
+    local query = SearchBox.Text
+    if query == "" then return end
+    task.spawn(lookupPlayer, query)
+end)
+
+ProfileBtn.MouseButton1Click:Connect(function()
+    if currentProfileId then
+        setclipboard("https://www.roblox.com/users/" .. currentProfileId .. "/profile")
+        ProfileBtn.Text = "Link Copied!"
+        task.delay(2, function() ProfileBtn.Text = "View Roblox Profile" end)
+    end
+end)
 
 
 local dragging, dragStart, startPos
@@ -139,27 +386,11 @@ UserInputService.InputChanged:Connect(function(input)
         MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
-UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+end)
 
-local function createBtn(text, pos)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 260, 0, 45)
-    btn.Position = pos
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    btn.Text = text
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 18
-    btn.Parent = ControlCanvas
-    Instance.new("UICorner", btn)
-    return btn
-end
-
-local HighkeyBtn = createBtn("Highkey Effect: OFF", UDim2.new(0.5, -130, 0, 60))
-local SkyBtn     = createBtn("Skybox: OFF", UDim2.new(0.5, -130, 0, 115))
-local SoundBtn   = createBtn("Play Sound", UDim2.new(0.5, -130, 0, 170))
-
-
+-- creds to sog :p
 local Board = Instance.new("Frame")
 Board.Name = "InputOverlayBoard"
 Board.Size = UDim2.new(0, 450, 0, 180)
@@ -170,20 +401,16 @@ Board.BackgroundTransparency = 0.2
 Board.BorderSizePixel = 0
 Board.Parent = HighkeyHub
 
-local BoardCorner = Instance.new("UICorner", Board)
-BoardCorner.CornerRadius = UDim.new(0, 10)
-
+Instance.new("UICorner", Board).CornerRadius = UDim.new(0, 10)
 local BoardStroke = Instance.new("UIStroke", Board)
 BoardStroke.Color = config.lavender
 BoardStroke.Thickness = 1.5
 BoardStroke.Transparency = 0.6
-
 local BoardPadding = Instance.new("UIPadding", Board)
 BoardPadding.PaddingTop = UDim.new(0, 6)
 BoardPadding.PaddingLeft = UDim.new(0, 6)
 BoardPadding.PaddingBottom = UDim.new(0, 6)
 BoardPadding.PaddingRight = UDim.new(0, 6)
-
 
 local keyObjects = {}
 local function createKey(text, x, y, w, h, keyCodeName)
@@ -201,9 +428,8 @@ local function createKey(text, x, y, w, h, keyCodeName)
     return key
 end
 
--- Credits to soggy :p
 createKey("Esc", 0, 0, 35, 28, "Escape")
-local nums = {"One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Zero"}
+local nums = {"One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Zero"}
 for i, v in ipairs(nums) do createKey(tostring(i % 10), 38 + (i-1)*31, 0, 28, 28, v) end
 createKey("Tab", 0, 31, 35, 28, "Tab")
 local row2 = {"Q","W","E","R","T","Y","U","I","O","P"}
@@ -211,67 +437,53 @@ for i, k in ipairs(row2) do createKey(k, 38 + (i-1)*31, 31, 28, 28, k) end
 createKey("Caps", 0, 62, 40, 28, "CapsLock")
 local row3 = {"A","S","D","F","G","H","J","K","L"}
 for i, k in ipairs(row3) do createKey(k, 43 + (i-1)*31, 62, 28, 28, k) end
-createKey(";", 322, 62, 28, 28, "QuotedDouble") 
+createKey(";", 322, 62, 28, 28, "QuotedDouble")
 createKey("Shift", 0, 93, 50, 28, "LeftShift")
 local row4 = {"Z","X","C","V","B","N","M"}
 for i, k in ipairs(row4) do createKey(k, 53 + (i-1)*31, 93, 28, 28, k) end
-createKey("Back", 270, 93, 45, 28, "Backspace") 
+createKey("Back", 270, 93, 45, 28, "Backspace")
 createKey("Ctrl", 0, 124, 35, 28, "LeftControl")
 createKey("Alt", 38, 124, 35, 28, "LeftAlt")
 createKey("Space", 76, 124, 150, 28, "Space")
 createKey("Enter", 229, 124, 55, 28, "Return")
 
-
 local MouseBody = Instance.new("Frame", Board)
-MouseBody.Size = UDim2.new(0, 60, 0, 90) MouseBody.Position = UDim2.new(0, 370, 0.2, 0)
-MouseBody.BackgroundColor3 = config.key_bg Instance.new("UICorner", MouseBody).CornerRadius = UDim.new(0, 30)
-local LMB = Instance.new("Frame", MouseBody) LMB.Size = UDim2.new(0.5, -2, 0.4, 0) LMB.Position = UDim2.new(0, 1, 0, 2) LMB.BackgroundColor3 = Color3.fromRGB(50, 50, 50) Instance.new("UICorner", LMB)
-local RMB = Instance.new("Frame", MouseBody) RMB.Size = UDim2.new(0.5, -2, 0.4, 0) RMB.Position = UDim2.new(0.5, 1, 0, 2) RMB.BackgroundColor3 = Color3.fromRGB(50, 50, 50) Instance.new("UICorner", RMB)
-
+MouseBody.Size = UDim2.new(0, 60, 0, 90)
+MouseBody.Position = UDim2.new(0, 370, 0.2, 0)
+MouseBody.BackgroundColor3 = config.key_bg
+Instance.new("UICorner", MouseBody).CornerRadius = UDim.new(0, 30)
+local LMB = Instance.new("Frame", MouseBody)
+LMB.Size = UDim2.new(0.5, -2, 0.4, 0) LMB.Position = UDim2.new(0, 1, 0, 2)
+LMB.BackgroundColor3 = Color3.fromRGB(50, 50, 50) Instance.new("UICorner", LMB)
+local RMB = Instance.new("Frame", MouseBody)
+RMB.Size = UDim2.new(0.5, -2, 0.4, 0) RMB.Position = UDim2.new(0.5, 1, 0, 2)
+RMB.BackgroundColor3 = Color3.fromRGB(50, 50, 50) Instance.new("UICorner", RMB)
 
 local cc = Lighting:FindFirstChild("Highkey_CC") or Instance.new("ColorCorrectionEffect", Lighting)
 cc.Name = "Highkey_CC"
 
 UserInputService.InputBegan:Connect(function(input, processed)
-    
     if input.KeyCode == Enum.KeyCode.M and not processed then
         config.guiVisible = not config.guiVisible
-
         if config.guiVisible then
-            
             MainFrame.Visible = true
             ControlCanvas.GroupTransparency = 1
-            TweenService:Create(
-                ControlCanvas,
-                TweenInfo.new(0.3),
-                {GroupTransparency = 0}
-            ):Play()
+            TweenService:Create(ControlCanvas, TweenInfo.new(0.3), {GroupTransparency = 0}):Play()
         else
-            
-            local tween = TweenService:Create(
-                ControlCanvas,
-                TweenInfo.new(0.3),
-                {GroupTransparency = 1}
-            )
+            local tween = TweenService:Create(ControlCanvas, TweenInfo.new(0.3), {GroupTransparency = 1})
             tween:Play()
             tween.Completed:Connect(function()
-                if not config.guiVisible then 
-                    MainFrame.Visible = false
-                end
+                if not config.guiVisible then MainFrame.Visible = false end
             end)
         end
     end
 
-    
     if input.UserInputType == Enum.UserInputType.Keyboard then
         local k = keyObjects[input.KeyCode.Name]
-        if k then 
-            k.BackgroundColor3 = config.lavender 
-            k.TextColor3 = Color3.new(0, 0, 0) 
-        end
-    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then 
+        if k then k.BackgroundColor3 = config.lavender k.TextColor3 = Color3.new(0, 0, 0) end
+    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
         LMB.BackgroundColor3 = config.lavender
-    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then 
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
         RMB.BackgroundColor3 = config.lavender
     end
 end)
@@ -280,117 +492,74 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Keyboard then
         local k = keyObjects[input.KeyCode.Name]
         if k then k.BackgroundColor3 = config.key_bg k.TextColor3 = Color3.new(1,1,1) end
-    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then LMB.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then RMB.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+        LMB.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+        RMB.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     end
 end)
 
 HighkeyBtn.MouseButton1Click:Connect(function()
     config.active = not config.active
     HighkeyBtn.Text = config.active and "Highkey Effect: ON" or "Highkey Effect: OFF"
+    HighkeyBtn.BackgroundColor3 = config.active and Color3.fromRGB(60, 0, 100) or Color3.fromRGB(30, 30, 30)
 end)
 
 SkyBtn.MouseButton1Click:Connect(function()
     config.skyActive = not config.skyActive
     SkyBtn.Text = config.skyActive and "Skybox: ON" or "Skybox: OFF"
+    SkyBtn.BackgroundColor3 = config.skyActive and Color3.fromRGB(60, 0, 100) or Color3.fromRGB(30, 30, 30)
 
     if config.skyActive then
         local sky = Lighting:FindFirstChild("HighkeySky") or Instance.new("Sky")
         sky.Name = "HighkeySky"
-
         local id = "rbxassetid://14777730300"
-
-        sky.SkyboxBk = id
-        sky.SkyboxDn = id
-        sky.SkyboxFt = id
-        sky.SkyboxLf = id
-        sky.SkyboxRt = id
-        sky.SkyboxUp = id
+        sky.SkyboxBk = id sky.SkyboxDn = id sky.SkyboxFt = id
+        sky.SkyboxLf = id sky.SkyboxRt = id sky.SkyboxUp = id
         sky.Parent = Lighting
-
-        Lighting.ClockTime = 0
-        Lighting.Brightness = 3
-        Lighting.ExposureCompensation = 0.5
-        Lighting.GlobalShadows = false
+        Lighting.ClockTime = 0 Lighting.Brightness = 3
+        Lighting.ExposureCompensation = 0.5 Lighting.GlobalShadows = false
         Lighting.Ambient = Color3.fromRGB(70, 80, 120)
         Lighting.OutdoorAmbient = Color3.fromRGB(70, 80, 120)
-
         local atm = Lighting:FindFirstChild("Highkey_Atmosphere") or Instance.new("Atmosphere")
-        atm.Name = "Highkey_Atmosphere"
-        atm.Density = 0.3
-        atm.Offset = 0.1
-        atm.Color = Color3.fromRGB(40, 60, 120)
-        atm.Decay = Color3.fromRGB(20, 30, 80)
-        atm.Glare = 0
-        atm.Haze = 1.5
-        atm.Parent = Lighting
-
-        cc.Brightness = 0
-        cc.Contrast = 0.1
-        cc.Saturation = -0.1
+        atm.Name = "Highkey_Atmosphere" atm.Density = 0.3 atm.Offset = 0.1
+        atm.Color = Color3.fromRGB(40, 60, 120) atm.Decay = Color3.fromRGB(20, 30, 80)
+        atm.Glare = 0 atm.Haze = 1.5 atm.Parent = Lighting
+        cc.Brightness = 0 cc.Contrast = 0.1 cc.Saturation = -0.1
         cc.TintColor = Color3.fromRGB(180, 200, 255)
-
     else
-        local sky = Lighting:FindFirstChild("HighkeySky")
-        if sky then sky:Destroy() end
-
-        local atm = Lighting:FindFirstChild("Highkey_Atmosphere")
-        if atm then atm:Destroy() end
-
-        local sun = Lighting:FindFirstChild("Highkey_SunRays")
-        if sun then sun:Destroy() end
-
+        local sky = Lighting:FindFirstChild("HighkeySky") if sky then sky:Destroy() end
+        local atm = Lighting:FindFirstChild("Highkey_Atmosphere") if atm then atm:Destroy() end
+        local sun = Lighting:FindFirstChild("Highkey_SunRays") if sun then sun:Destroy() end
         Lighting.ClockTime = originalLighting.ClockTime
         Lighting.Brightness = originalLighting.Brightness
         Lighting.ExposureCompensation = originalLighting.ExposureCompensation
         Lighting.GlobalShadows = originalLighting.GlobalShadows
         Lighting.Ambient = originalLighting.Ambient
         Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
-
-        cc.Brightness = 0
-        cc.Contrast = 0
-        cc.Saturation = 0
-        cc.TintColor = Color3.new(1, 1, 1)
+        cc.Brightness = 0 cc.Contrast = 0 cc.Saturation = 0 cc.TintColor = Color3.new(1,1,1)
     end
-end)
-
-SoundBtn.MouseButton1Click:Connect(function()
-    local s = Instance.new("Sound", workspace) s.SoundId = "rbxassetid://1837879017" s.Volume = 2 s:Play()
-    s.Ended:Connect(function() s:Destroy() end)
 end)
 
 RunService.RenderStepped:Connect(function(dt)
     local t = tick()
-    
-    
     config.intensity = config.active and math.min(config.intensity + dt * 0.5, 1) or math.max(config.intensity - dt * 0.5, 0)
-    
+
     if config.intensity > 0 then
-        
         config.hue = (t * 0.4) % 1
         cc.TintColor = Color3.new(1,1,1):Lerp(Color3.fromHSV(config.hue, 0.8, 1), config.intensity)
-        
-        
         local roll = math.sin(t * 2) * (0.35 * config.intensity)
         camera.CFrame = camera.CFrame * CFrame.Angles(0, 0, roll)
-        
-        
         camera.FieldOfView = config.originalFOV + (math.sin(t * 1.5) * (25 * config.intensity))
     else
-        
         cc.TintColor = Color3.new(1, 1, 1)
         camera.FieldOfView = config.originalFOV
     end
 
-    
     if topLine and bottomLine and leftLine and rightLine then
-        local pulse = (math.sin(t * 3) + 1) / 2 
-
+        local pulse = (math.sin(t * 3) + 1) / 2
         local color = Color3.fromRGB(255, 0, 0):Lerp(Color3.fromRGB(255, 80, 80), pulse)
-
-        topLine.BackgroundColor3 = color
-        bottomLine.BackgroundColor3 = color
-        leftLine.BackgroundColor3 = color
-        rightLine.BackgroundColor3 = color
+        topLine.BackgroundColor3 = color bottomLine.BackgroundColor3 = color
+        leftLine.BackgroundColor3 = color rightLine.BackgroundColor3 = color
     end
-end)
+end) -- boi stop being highkey
