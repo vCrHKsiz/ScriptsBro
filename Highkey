@@ -20,7 +20,16 @@ local config = {
     bg_dark = Color3.fromRGB(15, 15, 15),
     key_bg = Color3.fromRGB(30, 30, 30)
     }
-    
+
+
+local originalLighting = {
+    ClockTime = Lighting.ClockTime,
+    Brightness = Lighting.Brightness,
+    ExposureCompensation = Lighting.ExposureCompensation,
+    GlobalShadows = Lighting.GlobalShadows,
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient,
+}
 
 
 local HighkeyHub = Instance.new("ScreenGui")
@@ -272,11 +281,10 @@ SkyBtn.MouseButton1Click:Connect(function()
     SkyBtn.Text = config.skyActive and "Skybox: ON" or "Skybox: OFF"
 
     if config.skyActive then
-        
         local sky = Lighting:FindFirstChild("HighkeySky") or Instance.new("Sky")
         sky.Name = "HighkeySky"
 
-        local id = "rbxassetid://4969858203"
+        local id = "rbxassetid://14777730300"
 
         sky.SkyboxBk = id
         sky.SkyboxDn = id
@@ -286,62 +294,49 @@ SkyBtn.MouseButton1Click:Connect(function()
         sky.SkyboxUp = id
         sky.Parent = Lighting
 
-        
-        Lighting.ClockTime = 17
-        Lighting.Brightness = 2.5
-        Lighting.ExposureCompensation = 0.3
-        Lighting.GlobalShadows = true
-        Lighting.Ambient = Color3.fromRGB(120, 90, 70)
-        Lighting.OutdoorAmbient = Color3.fromRGB(140, 100, 80)
+        Lighting.ClockTime = 0
+        Lighting.Brightness = 3
+        Lighting.ExposureCompensation = 0.5
+        Lighting.GlobalShadows = false
+        Lighting.Ambient = Color3.fromRGB(70, 80, 120)
+        Lighting.OutdoorAmbient = Color3.fromRGB(70, 80, 120)
 
-        
         local atm = Lighting:FindFirstChild("Highkey_Atmosphere") or Instance.new("Atmosphere")
         atm.Name = "Highkey_Atmosphere"
-        atm.Density = 0.35
-        atm.Offset = 0.25
-        atm.Color = Color3.fromRGB(255, 170, 100)
-        atm.Decay = Color3.fromRGB(255, 120, 80)
-        atm.Glare = 0.4
-        atm.Haze = 2
+        atm.Density = 0.3
+        atm.Offset = 0.1
+        atm.Color = Color3.fromRGB(40, 60, 120)
+        atm.Decay = Color3.fromRGB(20, 30, 80)
+        atm.Glare = 0
+        atm.Haze = 1.5
         atm.Parent = Lighting
 
-        
-        local sun = Lighting:FindFirstChild("Highkey_SunRays") or Instance.new("SunRaysEffect")
-        sun.Name = "Highkey_SunRays"
-        sun.Intensity = 0.15
-        sun.Spread = 0.6
-        sun.Parent = Lighting
-
-        
-        cc.Brightness = 0.05
-        cc.Contrast = 0.2
-        cc.Saturation = 0.25
-        cc.TintColor = Color3.fromRGB(255, 200, 150)
+        cc.Brightness = 0
+        cc.Contrast = 0.1
+        cc.Saturation = -0.1
+        cc.TintColor = Color3.fromRGB(180, 200, 255)
 
     else
-        
         local sky = Lighting:FindFirstChild("HighkeySky")
         if sky then sky:Destroy() end
 
-       
         local atm = Lighting:FindFirstChild("Highkey_Atmosphere")
         if atm then atm:Destroy() end
 
         local sun = Lighting:FindFirstChild("Highkey_SunRays")
         if sun then sun:Destroy() end
 
-        
-        Lighting.ClockTime = 14
-        Lighting.Brightness = 2
-        Lighting.ExposureCompensation = 0
-        Lighting.Ambient = Color3.fromRGB(128,128,128)
-        Lighting.OutdoorAmbient = Color3.fromRGB(128,128,128)
+        Lighting.ClockTime = originalLighting.ClockTime
+        Lighting.Brightness = originalLighting.Brightness
+        Lighting.ExposureCompensation = originalLighting.ExposureCompensation
+        Lighting.GlobalShadows = originalLighting.GlobalShadows
+        Lighting.Ambient = originalLighting.Ambient
+        Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
 
-        
         cc.Brightness = 0
         cc.Contrast = 0
         cc.Saturation = 0
-        cc.TintColor = Color3.new(1,1,1)
+        cc.TintColor = Color3.new(1, 1, 1)
     end
 end)
 
