@@ -204,9 +204,9 @@ ClosePlayersBtn.Font = Enum.Font.GothamBold
 ClosePlayersBtn.TextSize = 11
 Instance.new("UICorner", ClosePlayersBtn).CornerRadius = UDim.new(0,5)
 
- ============================================================
-                   PROFILE PANEL bris
- ============================================================
+
+
+
 local profileExpanded = true
 
 local ProfilePanel = Instance.new("Frame", HighkeyHub)
@@ -231,7 +231,7 @@ ProfileTop.BackgroundColor3 = Color3.fromRGB(10,10,10)
 ProfileTop.BorderSizePixel = 0
 Instance.new("UICorner", ProfileTop).CornerRadius = UDim.new(0,10)
 
--- Close button (X) for ProfilePanel 
+
 local ProfileCloseBtn = Instance.new("TextButton", ProfileTop)
 ProfileCloseBtn.Size = UDim2.new(0,24,0,24)
 ProfileCloseBtn.Position = UDim2.new(1,-30,0,8)
@@ -417,6 +417,8 @@ ProfileExpandBtn.MouseButton1Click:Connect(function()
 end)
 
 
+
+
 local FriendsPanel = Instance.new("Frame", HighkeyHub)
 FriendsPanel.Name = "FriendsPanel"
 FriendsPanel.Size = UDim2.new(0,260,0,400)
@@ -491,6 +493,8 @@ end)
 local currentProfileId = nil
 
 
+
+
 local function loadFriends(userId)
     for _, c in ipairs(FriendsScroll:GetChildren()) do
         if c:IsA("Frame") then c:Destroy() end
@@ -548,7 +552,7 @@ local function loadFriends(userId)
             end
         end
         processPage(pages:GetCurrentPage())
-        
+
         while not pages.IsFinished do
             local pageOk, _ = pcall(function()
                 pages:AdvanceToNextPageAsync()
@@ -571,6 +575,8 @@ ViewFriendsBtn.MouseButton1Click:Connect(function()
 end)
 
 
+
+
 local function showProfile(targetPlayer)
     task.spawn(function()
         local userId = targetPlayer.UserId
@@ -583,7 +589,7 @@ local function showProfile(targetPlayer)
         StatID.Text = tostring(userId)
         YouBadge.Visible = (targetPlayer == player)
 
-        
+
         local ok, result = pcall(function()
             local pages = Players:GetFriendsAsync(userId)
             local count = 0
@@ -625,7 +631,7 @@ local function showProfile(targetPlayer)
             InfoDesc.Text = "No description"
         end
 
-        
+
         profileExpanded = true
         ProfileExpandBtn.Text = "▼"
         ProfileBody.Visible = true
@@ -637,6 +643,8 @@ local function showProfile(targetPlayer)
 end
 
 local playerRows = {}
+
+
 
 
 local function buildPlayerRow(targetPlayer)
@@ -679,7 +687,7 @@ local function buildPlayerRow(targetPlayer)
     subLabel.TextXAlignment = Enum.TextXAlignment.Left
 
     if targetPlayer == player then
-        
+
         local badge = Instance.new("TextLabel", row)
         badge.Size = UDim2.new(0,30,0,14)
         badge.Position = UDim2.new(1,-34,0.5,-7)
@@ -690,7 +698,7 @@ local function buildPlayerRow(targetPlayer)
         badge.TextSize = 9
         Instance.new("UICorner", badge).CornerRadius = UDim.new(0,3)
     elseif myFriendIds[targetPlayer.UserId] then
-        
+
         local badge = Instance.new("TextLabel", row)
         badge.Size = UDim2.new(0,50,0,14)
         badge.Position = UDim2.new(1,-54,0.5,-7)
@@ -726,7 +734,7 @@ end
 
 
 task.spawn(function()
-    task.wait(3) 
+    task.wait(3)
     for name, row in pairs(playerRows) do
         row:Destroy()
         playerRows[name] = nil
@@ -1022,4 +1030,4 @@ RunService.RenderStepped:Connect(function(dt)
         topLine.BackgroundColor3=color bottomLine.BackgroundColor3=color
         leftLine.BackgroundColor3=color rightLine.BackgroundColor3=color
     end
-end) -- Ez
+end) --ez
