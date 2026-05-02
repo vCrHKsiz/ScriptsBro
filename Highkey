@@ -417,6 +417,24 @@ ProfileExpandBtn.MouseButton1Click:Connect(function()
 end)
 
 
+local profileDragging = false
+local profileDragStart, profileStartPos
+
+ProfilePanel.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        profileDragging = true
+        profileDragStart = input.Position
+        profileStartPos = ProfilePanel.Position
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        profileDragging = false
+    end
+end)
+
+
 
 
 local FriendsPanel = Instance.new("Frame", HighkeyHub)
@@ -490,14 +508,32 @@ CloseFriendsBtn.MouseButton1Click:Connect(function()
     FriendsPanel.Visible = false
 end)
 
+
+local friendsDragging = false
+local friendsDragStart, friendsStartPos
+
+FriendsPanel.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        friendsDragging = true
+        friendsDragStart = input.Position
+        friendsStartPos = FriendsPanel.Position
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        friendsDragging = false
+    end
+end)
+
 local currentProfileId = nil
 
 
-
+local showProfile
 
 local function loadFriends(userId)
     for _, c in ipairs(FriendsScroll:GetChildren()) do
-        if c:IsA("Frame") then c:Destroy() end
+        if c:IsA("Frame") or c:IsA("TextButton") then c:Destroy() end
     end
     FriendsLoadingLabel.Text = "Loading friends..."
     FriendsLoadingLabel.Visible = true
@@ -515,13 +551,17 @@ local function loadFriends(userId)
         local order = 1
         local function processPage(page)
             for _, friendData in ipairs(page) do
-                local row = Instance.new("Frame", FriendsScroll)
+                -- Use TextButton so clicking to view profile works
+                local row = Instance.new("TextButton", FriendsScroll)
                 row.Size = UDim2.new(1,0,0,46)
                 row.BackgroundColor3 = Color3.fromRGB(22,22,22)
                 row.BorderSizePixel = 0
                 row.LayoutOrder = order
+                row.Text = ""
+                row.AutoButtonColor = false
                 order = order + 1
                 Instance.new("UICorner", row).CornerRadius = UDim.new(0,6)
+
                 local av = Instance.new("ImageLabel", row)
                 av.Size = UDim2.new(0,34,0,34)
                 av.Position = UDim2.new(0,8,0.5,-17)
@@ -529,6 +569,7 @@ local function loadFriends(userId)
                 av.Image = ""
                 Instance.new("UICorner", av).CornerRadius = UDim.new(0,5)
                 getAvatar(friendData.Id, av)
+
                 local dname = Instance.new("TextLabel", row)
                 dname.Size = UDim2.new(1,-56,0,18)
                 dname.Position = UDim2.new(0,50,0,8)
@@ -539,6 +580,7 @@ local function loadFriends(userId)
                 dname.TextSize = 12
                 dname.TextXAlignment = Enum.TextXAlignment.Left
                 dname.TextTruncate = Enum.TextTruncate.AtEnd
+
                 local uname = Instance.new("TextLabel", row)
                 uname.Size = UDim2.new(1,-56,0,14)
                 uname.Position = UDim2.new(0,50,0,26)
@@ -548,6 +590,107 @@ local function loadFriends(userId)
                 uname.Font = Enum.Font.Gotham
                 uname.TextSize = 10
                 uname.TextXAlignment = Enum.TextXAlignment.Left
+
+                
+                local capturedId = friendData.Id
+                local capturedDisplayName = friendData.DisplayName
+                local capturedUsername = friendData.Username
+
+                -- Hover efx shit
+                row.MouseEnter:Connect(function()
+                    row.BackgroundColor3 = Color3.fromRGB(40,10,60)
+                end)
+                row.MouseLeave:Connect(function()
+                    row.BackgroundColor3 = Color3.fromRGB(22,22,22)
+                end)
+
+                
+                row.MouseButton1Click:Connect(function()
+                    
+                    local fakeTarget = {
+                        UserId = capturedId,
+                        DisplayName = capturedDisplayName,
+                        Name = capturedUsername,
+                        AccountAge = 0, 
+                    }
+                    
+                    currentProfileId = capturedId
+                    getAvatar(capturedId, ProfileAvatar)
+                    ProfileDisplayName.Text = capturedDisplayName
+                    ProfileUsername.Text = "@" .. capturedUsername
+                    InfoDisplay.Text = capturedDisplayName
+                    InfoUsername.Text = "@" .. capturedUsername
+                    StatID.Text = tostring(capturedId)
+                    YouBadge.Visible = false
+
+                    StatFriends.Text = "..."
+                    StatAge.Text = "..."
+                    InfoCreated.Text = "..."
+                    InfoDesc.Text = "..."
+
+                    task.spawn(function()
+                        
+                        local fok, fresult = pcall(function()
+                            local fpages = Players:GetFriendsAsync(capturedId)
+                            local count = 0
+                            for _ in ipairs(fpages:GetCurrentPage()) do count = count + 1 end
+                            while not fpages.IsFinished do
+                                local adv = pcall(function() fpages:AdvanceToNextPageAsync() end)
+                                if not adv then break end
+                                for _ in ipairs(fpages:GetCurrentPage()) do count = count + 1 end
+                            end
+                            return count
+                        end)
+                        StatFriends.Text = fok and tostring(fresult) or "?"
+
+                        
+                        local descOk, descResult = pcall(function()
+                            return game:HttpGet("https://users.roblox.com/v1/users/" .. capturedId)
+                        end)
+                        if descOk and descResult then
+                            local jsonOk, parsed = pcall(function()
+                                return game:GetService("HttpService"):JSONDecode(descResult)
+                            end)
+                            if jsonOk and parsed then
+                                if parsed.description and parsed.description ~= "" then
+                                    InfoDesc.Text = parsed.description
+                                else
+                                    InfoDesc.Text = "No description"
+                                end
+                                if parsed.created then
+                                    local yr = string.match(parsed.created, "^(%d+)")
+                                    local mo = string.match(parsed.created, "^%d+%-(%d+)")
+                                    local months = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}
+                                    local moNum = tonumber(mo) or 1
+                                    InfoCreated.Text = months[moNum] .. " " .. (yr or "?")
+                                end
+                            end
+                        else
+                            InfoDesc.Text = "No description"
+                        end
+                        
+                        local ageOk, ageResult = pcall(function()
+                            return Players:GetPlayerByUserId(capturedId)
+                        end)
+                        if ageOk and ageResult then
+                            local ageDays = ageResult.AccountAge
+                            local ageText
+                            if ageDays >= 365 then ageText = math.floor(ageDays/365).."yr"
+                            elseif ageDays >= 30 then ageText = math.floor(ageDays/30).."mo"
+                            else ageText = ageDays.."d" end
+                            StatAge.Text = ageText
+                        else
+                            StatAge.Text = "?"
+                        end
+                    end)
+
+                    profileExpanded = true
+                    ProfileExpandBtn.Text = "▼"
+                    ProfileBody.Visible = true
+                    ProfilePanel.Size = UDim2.new(0,280,0,PROFILE_EXPANDED_H)
+                    ProfilePanel.Visible = true
+                end)
+
                 FriendsScroll.CanvasSize = UDim2.new(0,0,0,FriendsLayout.AbsoluteContentSize.Y + 8)
             end
         end
@@ -577,7 +720,7 @@ end)
 
 
 
-local function showProfile(targetPlayer)
+showProfile = function(targetPlayer)
     task.spawn(function()
         local userId = targetPlayer.UserId
         currentProfileId = userId
@@ -841,20 +984,22 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
-        if dragging then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
-        end
         if resizing then
             local delta = input.Position - resizeStart
             local newWidth = math.max(minSize.X, startSize.X + delta.X)
             local newHeight = math.max(minSize.Y, startSize.Y + delta.Y)
             MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+        elseif dragging then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            ProfilePanel.Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset + 310, MainFrame.Position.Y.Scale, MainFrame.Position.Y.Offset)
+            FriendsPanel.Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset + 600, MainFrame.Position.Y.Scale, MainFrame.Position.Y.Offset)
+        elseif profileDragging then
+            local delta = input.Position - profileDragStart
+            ProfilePanel.Position = UDim2.new(profileStartPos.X.Scale, profileStartPos.X.Offset + delta.X, profileStartPos.Y.Scale, profileStartPos.Y.Offset + delta.Y)
+        elseif friendsDragging then
+            local delta = input.Position - friendsDragStart
+            FriendsPanel.Position = UDim2.new(friendsStartPos.X.Scale, friendsStartPos.X.Offset + delta.X, friendsStartPos.Y.Scale, friendsStartPos.Y.Offset + delta.Y)
         end
     end
 end)
@@ -866,87 +1011,8 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        ProfilePanel.Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset + 310, MainFrame.Position.Y.Scale, MainFrame.Position.Y.Offset)
-        FriendsPanel.Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset + 600, MainFrame.Position.Y.Scale, MainFrame.Position.Y.Offset)
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
-
 local keyObjects = {}
 
-UserInputService.InputBegan:Connect(function(input, processed)
-    if input.KeyCode == Enum.KeyCode.M and not processed then
-        config.guiVisible = not config.guiVisible
-        if config.guiVisible then
-            MainFrame.Visible = true
-            ControlCanvas.GroupTransparency = 1
-            TweenService:Create(ControlCanvas, TweenInfo.new(0.3), {GroupTransparency = 0}):Play()
-        else
-            local t = TweenService:Create(ControlCanvas, TweenInfo.new(0.3), {GroupTransparency = 1})
-            t:Play()
-            t.Completed:Connect(function()
-                if not config.guiVisible then
-                    MainFrame.Visible = false
-                    ProfilePanel.Visible = false
-                    FriendsPanel.Visible = false
-                end
-            end)
-        end
-    end
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        local k = keyObjects[input.KeyCode.Name]
-        if k then k.BackgroundColor3 = config.lavender k.TextColor3 = Color3.new(0,0,0) end
-    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if LMB then LMB.BackgroundColor3 = config.lavender end
-    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-        if RMB then RMB.BackgroundColor3 = config.lavender end
-    end
-end)
-
-HighkeyBtn.MouseButton1Click:Connect(function()
-    config.active = not config.active
-    HighkeyBtn.Text = config.active and "Highkey Effect: ON" or "Highkey Effect: OFF"
-    HighkeyBtn.BackgroundColor3 = config.active and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
-end)
-
-SkyBtn.MouseButton1Click:Connect(function()
-    config.skyActive = not config.skyActive
-    SkyBtn.Text = config.skyActive and "Skybox: ON" or "Skybox: OFF"
-    SkyBtn.BackgroundColor3 = config.skyActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
-    if config.skyActive then
-        local sky = Lighting:FindFirstChild("HighkeySky") or Instance.new("Sky")
-        sky.Name = "HighkeySky"
-        local id = "rbxassetid://14777730300"
-        sky.SkyboxBk=id sky.SkyboxDn=id sky.SkyboxFt=id
-        sky.SkyboxLf=id sky.SkyboxRt=id sky.SkyboxUp=id sky.Parent=Lighting
-        Lighting.ClockTime=0 Lighting.Brightness=3
-        Lighting.ExposureCompensation=0.5 Lighting.GlobalShadows=false
-        Lighting.Ambient=Color3.fromRGB(70,80,120) Lighting.OutdoorAmbient=Color3.fromRGB(70,80,120)
-        local atm = Lighting:FindFirstChild("Highkey_Atmosphere") or Instance.new("Atmosphere")
-        atm.Name="Highkey_Atmosphere" atm.Density=0.3 atm.Offset=0.1
-        atm.Color=Color3.fromRGB(40,60,120) atm.Decay=Color3.fromRGB(20,30,80)
-        atm.Glare=0 atm.Haze=1.5 atm.Parent=Lighting
-        local cc = Lighting:FindFirstChild("Highkey_CC") or Instance.new("ColorCorrectionEffect",Lighting)
-        cc.Name="Highkey_CC" cc.Brightness=0 cc.Contrast=0.1 cc.Saturation=-0.1
-        cc.TintColor=Color3.fromRGB(180,200,255)
-    else
-        local sky=Lighting:FindFirstChild("HighkeySky") if sky then sky:Destroy() end
-        local atm=Lighting:FindFirstChild("Highkey_Atmosphere") if atm then atm:Destroy() end
-        local sun=Lighting:FindFirstChild("Highkey_SunRays") if sun then sun:Destroy() end
-        Lighting.ClockTime=originalLighting.ClockTime Lighting.Brightness=originalLighting.Brightness
-        Lighting.ExposureCompensation=originalLighting.ExposureCompensation
-        Lighting.GlobalShadows=originalLighting.GlobalShadows
-        Lighting.Ambient=originalLighting.Ambient Lighting.OutdoorAmbient=originalLighting.OutdoorAmbient
-        local cc=Lighting:FindFirstChild("Highkey_CC")
-        if cc then cc.Brightness=0 cc.Contrast=0 cc.Saturation=0 cc.TintColor=Color3.new(1,1,1) end
-    end
-end)
 
 local Board = Instance.new("Frame", HighkeyHub)
 Board.Name = "InputOverlayBoard"
@@ -992,6 +1058,7 @@ createKey("Alt",38,124,35,28,"LeftAlt")
 createKey("Space",76,124,150,28,"Space")
 createKey("Enter",229,124,55,28,"Return")
 
+
 local MouseBody=Instance.new("Frame",Board)
 MouseBody.Size=UDim2.new(0,60,0,90) MouseBody.Position=UDim2.new(0,370,0.2,0)
 MouseBody.BackgroundColor3=config.key_bg Instance.new("UICorner",MouseBody).CornerRadius=UDim.new(0,30)
@@ -1000,12 +1067,81 @@ LMB.BackgroundColor3=Color3.fromRGB(50,50,50) Instance.new("UICorner",LMB)
 local RMB=Instance.new("Frame",MouseBody) RMB.Size=UDim2.new(0.5,-2,0.4,0) RMB.Position=UDim2.new(0.5,1,0,2)
 RMB.BackgroundColor3=Color3.fromRGB(50,50,50) Instance.new("UICorner",RMB)
 
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if input.KeyCode == Enum.KeyCode.M and not processed then
+        config.guiVisible = not config.guiVisible
+        if config.guiVisible then
+            MainFrame.Visible = true
+            ControlCanvas.GroupTransparency = 1
+            TweenService:Create(ControlCanvas, TweenInfo.new(0.3), {GroupTransparency = 0}):Play()
+        else
+            local t = TweenService:Create(ControlCanvas, TweenInfo.new(0.3), {GroupTransparency = 1})
+            t:Play()
+            t.Completed:Connect(function()
+                if not config.guiVisible then
+                    MainFrame.Visible = false
+                    ProfilePanel.Visible = false
+                    FriendsPanel.Visible = false
+                end
+            end)
+        end
+    end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        local k = keyObjects[input.KeyCode.Name]
+        if k then k.BackgroundColor3 = config.lavender k.TextColor3 = Color3.new(0,0,0) end
+    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+        LMB.BackgroundColor3 = config.lavender
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+        RMB.BackgroundColor3 = config.lavender
+    end
+end)
+
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType==Enum.UserInputType.Keyboard then
         local k=keyObjects[input.KeyCode.Name]
         if k then k.BackgroundColor3=config.key_bg k.TextColor3=Color3.new(1,1,1) end
     elseif input.UserInputType==Enum.UserInputType.MouseButton1 then LMB.BackgroundColor3=Color3.fromRGB(50,50,50)
     elseif input.UserInputType==Enum.UserInputType.MouseButton2 then RMB.BackgroundColor3=Color3.fromRGB(50,50,50)
+    end
+end)
+
+HighkeyBtn.MouseButton1Click:Connect(function()
+    config.active = not config.active
+    HighkeyBtn.Text = config.active and "Highkey Effect: ON" or "Highkey Effect: OFF"
+    HighkeyBtn.BackgroundColor3 = config.active and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+end)
+
+SkyBtn.MouseButton1Click:Connect(function()
+    config.skyActive = not config.skyActive
+    SkyBtn.Text = config.skyActive and "Skybox: ON" or "Skybox: OFF"
+    SkyBtn.BackgroundColor3 = config.skyActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if config.skyActive then
+        local sky = Lighting:FindFirstChild("HighkeySky") or Instance.new("Sky")
+        sky.Name = "HighkeySky"
+        local id = "rbxassetid://14777730300"
+        sky.SkyboxBk=id sky.SkyboxDn=id sky.SkyboxFt=id
+        sky.SkyboxLf=id sky.SkyboxRt=id sky.SkyboxUp=id sky.Parent=Lighting
+        Lighting.ClockTime=0 Lighting.Brightness=3
+        Lighting.ExposureCompensation=0.5 Lighting.GlobalShadows=false
+        Lighting.Ambient=Color3.fromRGB(70,80,120) Lighting.OutdoorAmbient=Color3.fromRGB(70,80,120)
+        local atm = Lighting:FindFirstChild("Highkey_Atmosphere") or Instance.new("Atmosphere")
+        atm.Name="Highkey_Atmosphere" atm.Density=0.3 atm.Offset=0.1
+        atm.Color=Color3.fromRGB(40,60,120) atm.Decay=Color3.fromRGB(20,30,80)
+        atm.Glare=0 atm.Haze=1.5 atm.Parent=Lighting
+        local cc = Lighting:FindFirstChild("Highkey_CC") or Instance.new("ColorCorrectionEffect",Lighting)
+        cc.Name="Highkey_CC" cc.Brightness=0 cc.Contrast=0.1 cc.Saturation=-0.1
+        cc.TintColor=Color3.fromRGB(180,200,255)
+    else
+        local sky=Lighting:FindFirstChild("HighkeySky") if sky then sky:Destroy() end
+        local atm=Lighting:FindFirstChild("Highkey_Atmosphere") if atm then atm:Destroy() end
+        local sun=Lighting:FindFirstChild("Highkey_SunRays") if sun then sun:Destroy() end
+        Lighting.ClockTime=originalLighting.ClockTime Lighting.Brightness=originalLighting.Brightness
+        Lighting.ExposureCompensation=originalLighting.ExposureCompensation
+        Lighting.GlobalShadows=originalLighting.GlobalShadows
+        Lighting.Ambient=originalLighting.Ambient Lighting.OutdoorAmbient=originalLighting.OutdoorAmbient
+        local cc=Lighting:FindFirstChild("Highkey_CC")
+        if cc then cc.Brightness=0 cc.Contrast=0 cc.Saturation=0 cc.TintColor=Color3.new(1,1,1) end
     end
 end)
 
