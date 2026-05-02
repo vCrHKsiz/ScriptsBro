@@ -390,7 +390,7 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
 end)
 
--- creds to sog :p
+-- Consider yourself lucky pal
 local Board = Instance.new("Frame")
 Board.Name = "InputOverlayBoard"
 Board.Size = UDim2.new(0, 450, 0, 180)
