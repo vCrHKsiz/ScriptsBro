@@ -1030,4 +1030,4 @@ RunService.RenderStepped:Connect(function(dt)
         topLine.BackgroundColor3=color bottomLine.BackgroundColor3=color
         leftLine.BackgroundColor3=color rightLine.BackgroundColor3=color
     end
-end) --ez
+end) -- ez
