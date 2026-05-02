@@ -59,6 +59,14 @@ MainFrame.ClipsDescendants = true
 MainFrame.Parent = HighkeyHub
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
+local handle = Instance.new("Frame")
+handle.Size = UDim2.new(0, 12, 0, 12)
+handle.Position = UDim2.new(1, -12, 1, -12)
+handle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+handle.BorderSizePixel = 0
+handle.ZIndex = 50
+handle.Parent = MainFrame
+
 local Stroke = Instance.new("UIStroke", MainFrame)
 Stroke.Color = config.lavender
 Stroke.Thickness = 2
@@ -660,12 +668,66 @@ ExpandBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-local dragging, dragStart, startPos
+
+local dragging = false
+local resizing = false
+local dragStart, startPos
+local resizeStart, startSize
+local minSize = Vector2.new(200, 150)
+
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true dragStart = input.Position startPos = MainFrame.Position
+        local mousePos = input.Position
+        local framePos = MainFrame.AbsolutePosition
+        local frameSize = MainFrame.AbsoluteSize
+
+        
+        if mousePos.X > framePos.X + frameSize.X - 15 and
+           mousePos.Y > framePos.Y + frameSize.Y - 15 then
+            
+            resizing = true
+            resizeStart = mousePos
+            startSize = frameSize
+
+        else
+            dragging = true
+            dragStart = mousePos
+            startPos = MainFrame.Position
+        end
     end
 end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        
+        if dragging then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+
+        if resizing then
+            local delta = input.Position - resizeStart
+
+            local newWidth = math.max(minSize.X, startSize.X + delta.X)
+            local newHeight = math.max(minSize.Y, startSize.Y + delta.Y)
+
+            MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+        resizing = false
+    end
+end)
+
 UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStart
