@@ -59,7 +59,7 @@ HighkeyHub.Parent = player:WaitForChild("PlayerGui")
 task.defer(function()
     task.wait(1)
     game.TextChatService.TextChannels.RBXSystem:DisplaySystemMessage(
-        "<font color='#AA00FF'>  ╔  Yoggs ╝ [You are highkey]</font>"
+        "<font color='#AA00FF'>  ╔  HighGod ╝ [You are highkey]</font>"
     )
 end)
 
