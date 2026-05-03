@@ -48,6 +48,10 @@ task.spawn(function()
     end
 end)
 
+
+UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+UserInputService.MouseIconEnabled = true
+
 local HighkeyHub = Instance.new("ScreenGui")
 HighkeyHub.Name = "HighkeyHub"
 HighkeyHub.ResetOnSpawn = false
@@ -417,20 +421,52 @@ ProfileExpandBtn.MouseButton1Click:Connect(function()
 end)
 
 
+local ProfileResizeHandle = Instance.new("Frame", ProfilePanel)
+ProfileResizeHandle.Size = UDim2.new(0, 14, 0, 14)
+ProfileResizeHandle.Position = UDim2.new(1, -14, 1, -14)
+ProfileResizeHandle.BackgroundColor3 = Color3.fromRGB(120, 60, 200)
+ProfileResizeHandle.BackgroundTransparency = 0.4
+ProfileResizeHandle.BorderSizePixel = 0
+ProfileResizeHandle.ZIndex = 20
+Instance.new("UICorner", ProfileResizeHandle).CornerRadius = UDim.new(0, 3)
+local ProfileHandleLabel = Instance.new("TextLabel", ProfileResizeHandle)
+ProfileHandleLabel.Size = UDim2.new(1, 0, 1, 0)
+ProfileHandleLabel.BackgroundTransparency = 1
+ProfileHandleLabel.Text = "⊿"
+ProfileHandleLabel.TextColor3 = Color3.fromRGB(200, 160, 255)
+ProfileHandleLabel.Font = Enum.Font.GothamBold
+ProfileHandleLabel.TextSize = 10
+ProfileHandleLabel.ZIndex = 21
+
+
 local profileDragging = false
+local profileResizing = false
 local profileDragStart, profileStartPos
+local profileResizeStart, profileStartSize
+local profileMinSize = Vector2.new(200, 150)
 
 ProfilePanel.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        profileDragging = true
-        profileDragStart = input.Position
-        profileStartPos = ProfilePanel.Position
+        local mousePos = input.Position
+        local framePos = ProfilePanel.AbsolutePosition
+        local frameSize = ProfilePanel.AbsoluteSize
+        if mousePos.X > framePos.X + frameSize.X - 18 and
+           mousePos.Y > framePos.Y + frameSize.Y - 18 then
+            profileResizing = true
+            profileResizeStart = mousePos
+            profileStartSize = frameSize
+        else
+            profileDragging = true
+            profileDragStart = mousePos
+            profileStartPos = ProfilePanel.Position
+        end
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         profileDragging = false
+        profileResizing = false
     end
 end)
 
@@ -551,7 +587,7 @@ local function loadFriends(userId)
         local order = 1
         local function processPage(page)
             for _, friendData in ipairs(page) do
-                -- Use TextButton so clicking to view profile works
+                
                 local row = Instance.new("TextButton", FriendsScroll)
                 row.Size = UDim2.new(1,0,0,46)
                 row.BackgroundColor3 = Color3.fromRGB(22,22,22)
@@ -591,12 +627,12 @@ local function loadFriends(userId)
                 uname.TextSize = 10
                 uname.TextXAlignment = Enum.TextXAlignment.Left
 
-                
+               
                 local capturedId = friendData.Id
                 local capturedDisplayName = friendData.DisplayName
                 local capturedUsername = friendData.Username
 
-                -- Hover efx shit
+                
                 row.MouseEnter:Connect(function()
                     row.BackgroundColor3 = Color3.fromRGB(40,10,60)
                 end)
@@ -606,7 +642,7 @@ local function loadFriends(userId)
 
                 
                 row.MouseButton1Click:Connect(function()
-                    
+                   
                     local fakeTarget = {
                         UserId = capturedId,
                         DisplayName = capturedDisplayName,
@@ -994,6 +1030,11 @@ UserInputService.InputChanged:Connect(function(input)
             MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
             ProfilePanel.Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset + 310, MainFrame.Position.Y.Scale, MainFrame.Position.Y.Offset)
             FriendsPanel.Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset + 600, MainFrame.Position.Y.Scale, MainFrame.Position.Y.Offset)
+        elseif profileResizing then
+            local delta = input.Position - profileResizeStart
+            local newW = math.max(profileMinSize.X, profileStartSize.X + delta.X)
+            local newH = math.max(profileMinSize.Y, profileStartSize.Y + delta.Y)
+            ProfilePanel.Size = UDim2.new(0, newW, 0, newH)
         elseif profileDragging then
             local delta = input.Position - profileDragStart
             ProfilePanel.Position = UDim2.new(profileStartPos.X.Scale, profileStartPos.X.Offset + delta.X, profileStartPos.Y.Scale, profileStartPos.Y.Offset + delta.Y)
