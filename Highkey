@@ -59,8 +59,18 @@ HighkeyHub.Parent = player:WaitForChild("PlayerGui")
 task.defer(function()
     task.wait(1)
     game.TextChatService.TextChannels.RBXSystem:DisplaySystemMessage(
-        "<font color='#AA00FF'>  ╔  HighGod ╝ [You are highkey]</font>"
+        "<font color='#AA00FF'>  ╔  Yoggs ╝ [You are highkey]</font>"
     )
+end)
+
+task.spawn(function()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hum = char:WaitForChild("Humanoid", 5)
+    if hum then
+        hum.Jump = true
+        task.wait(0.1)
+        hum.Jump = false
+    end
 end)
 
 local function getAvatar(userId, imgLabel)
@@ -164,12 +174,26 @@ local function makeBtn(text, yPos)
     return b
 end
 
-local HighkeyBtn = makeBtn("Highkey Effect: OFF", 8)
+local function makeHalfBtn(text, yPos, xOffset)
+    local b = Instance.new("TextButton", Body)
+    b.Size = UDim2.new(0,126,0,38)
+    b.Position = UDim2.new(0.5,-130+xOffset,0,yPos)
+    b.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    b.Text = text b.TextColor3 = Color3.new(1,1,1)
+    b.Font = Enum.Font.SourceSansBold b.TextSize = 13
+    Instance.new("UICorner", b)
+    return b
+end
+
+local HighkeyBtn = makeHalfBtn("Highkey: OFF", 8, 0)
+local ManiacBtn  = makeHalfBtn("Maniac: OFF", 8, 134)
 local SkyBtn     = makeBtn("Skybox: OFF", 54)
+local KakuBtn    = makeBtn("Kaku: OFF", 100)
+local StasisBtn  = makeBtn("Stasis: OFF", 146)
 
 local PlayersLabel = Instance.new("TextLabel", Body)
 PlayersLabel.Size = UDim2.new(0,260,0,16)
-PlayersLabel.Position = UDim2.new(0.5,-130,0,100)
+PlayersLabel.Position = UDim2.new(0.5,-130,0,192)
 PlayersLabel.BackgroundTransparency = 1
 PlayersLabel.Text = "PLAYERS IN SERVER"
 PlayersLabel.TextColor3 = Color3.fromRGB(100,100,100)
@@ -179,7 +203,7 @@ PlayersLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local PlayerScroll = Instance.new("ScrollingFrame", Body)
 PlayerScroll.Size = UDim2.new(0,260,0,140)
-PlayerScroll.Position = UDim2.new(0.5,-130,0,120)
+PlayerScroll.Position = UDim2.new(0.5,-130,0,212)
 PlayerScroll.BackgroundColor3 = Color3.fromRGB(18,18,18)
 PlayerScroll.BorderSizePixel = 0
 PlayerScroll.ScrollBarThickness = 3
@@ -199,7 +223,7 @@ PlayerListPad.PaddingBottom = UDim.new(0,4)
 
 local ClosePlayersBtn = Instance.new("TextButton", Body)
 ClosePlayersBtn.Size = UDim2.new(0,260,0,28)
-ClosePlayersBtn.Position = UDim2.new(0.5,-130,0,268)
+ClosePlayersBtn.Position = UDim2.new(0.5,-130,0,360)
 ClosePlayersBtn.BackgroundColor3 = Color3.fromRGB(35,35,35)
 ClosePlayersBtn.Text = "▲ collapse players"
 ClosePlayersBtn.TextColor3 = Color3.fromRGB(180,180,180)
@@ -389,8 +413,30 @@ ViewFriendsBtn.TextSize = 13
 Instance.new("UICorner", ViewFriendsBtn).CornerRadius = UDim.new(0,6)
 
 local CopyBtn = Instance.new("TextButton", ProfileBody)
-CopyBtn.Size = UDim2.new(1,-24,0,34)
+CopyBtn.Size = UDim2.new(1,-66,0,34)
 CopyBtn.Position = UDim2.new(0,12,0,240)
+
+local RinneganBtn = Instance.new("TextButton", ProfileBody)
+RinneganBtn.Size = UDim2.new(0,38,0,34)
+RinneganBtn.Position = UDim2.new(1,-50,0,240)
+RinneganBtn.BackgroundColor3 = Color3.fromRGB(60,0,120)
+RinneganBtn.Text = "👁"
+RinneganBtn.TextSize = 18
+RinneganBtn.Font = Enum.Font.GothamBold
+RinneganBtn.TextColor3 = Color3.fromRGB(180,100,255)
+RinneganBtn.BorderSizePixel = 0
+Instance.new("UICorner", RinneganBtn).CornerRadius = UDim.new(0,6)
+local RinneganStroke = Instance.new("UIStroke", RinneganBtn)
+RinneganStroke.Color = Color3.fromRGB(140,0,255) RinneganStroke.Thickness = 1.5
+
+local RinneganX = Instance.new("TextLabel", RinneganBtn)
+RinneganX.Size = UDim2.new(1,0,1,0)
+RinneganX.BackgroundTransparency = 1
+RinneganX.Text = "✕"
+RinneganX.TextColor3 = Color3.fromRGB(255,80,80)
+RinneganX.Font = Enum.Font.GothamBold
+RinneganX.TextSize = 14
+RinneganX.Visible = false
 CopyBtn.BackgroundColor3 = Color3.fromRGB(70,0,130)
 CopyBtn.Text = "Copy profile link"
 CopyBtn.TextColor3 = Color3.new(1,1,1)
@@ -937,7 +983,7 @@ CopyBtn.MouseButton1Click:Connect(function()
 end)
 
 local COLLAPSED_H = 40
-local EXPANDED_H  = 310
+local EXPANDED_H  = 402
 local playersExpanded = true
 
 local function setHeight(h)
@@ -952,14 +998,14 @@ ClosePlayersBtn.MouseButton1Click:Connect(function()
         PlayerScroll.Visible = true
         PlayersLabel.Visible = true
         ClosePlayersBtn.Text = "▲ collapse players"
-        ClosePlayersBtn.Position = UDim2.new(0.5,-130,0,268)
+        ClosePlayersBtn.Position = UDim2.new(0.5,-130,0,360)
         setHeight(EXPANDED_H)
     else
         PlayerScroll.Visible = false
         PlayersLabel.Visible = false
         ClosePlayersBtn.Text = "▼ expand players"
-        ClosePlayersBtn.Position = UDim2.new(0.5,-130,0,100)
-        setHeight(150)
+        ClosePlayersBtn.Position = UDim2.new(0.5,-130,0,192)
+        setHeight(242)
         ProfilePanel.Visible = false
         FriendsPanel.Visible = false
     end
@@ -970,7 +1016,7 @@ ExpandBtn.MouseButton1Click:Connect(function()
     if config.expanded then
         ExpandBtn.Text = "▼ hide"
         Body.Visible = true
-        setHeight(playersExpanded and EXPANDED_H or 150)
+        setHeight(playersExpanded and EXPANDED_H or 242)
     else
         ExpandBtn.Text = "▶ show"
         Body.Visible = false
@@ -1130,9 +1176,102 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
+
+KakuBtn.MouseButton1Click:Connect(function()
+    local kakuActive = KakuBtn.Text == "Kaku: ON"
+    kakuActive = not kakuActive
+    KakuBtn.Text = kakuActive and "Kaku: ON" or "Kaku: OFF"
+    KakuBtn.BackgroundColor3 = kakuActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if kakuActive then
+        task.spawn(function()
+            while KakuBtn.Text == "Kaku: ON" do
+                local c = player.Character
+                local root = c and c:FindFirstChild("HumanoidRootPart")
+                if root then root.CFrame = CFrame.new(0, -100000, 0) end
+                task.wait(0.1)
+            end
+        end)
+    else
+        local char = player.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.SeatPart then
+                local seat = humanoid.SeatPart
+                humanoid.Jump = true task.wait(0.1) humanoid.Jump = false task.wait(0.1)
+                if seat and seat:IsA("Seat") then seat:Sit(humanoid) end
+            end
+        end
+    end
+end)
+
+local stasisConn = nil
+StasisBtn.MouseButton1Click:Connect(function()
+    local stasisActive = StasisBtn.Text == "Stasis: ON"
+    stasisActive = not stasisActive
+    StasisBtn.Text = stasisActive and "Stasis: ON" or "Stasis: OFF"
+    StasisBtn.BackgroundColor3 = stasisActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if stasisActive then
+        stasisConn = RunService.RenderStepped:Connect(function()
+            local c = player.Character
+            local root = c and c:FindFirstChild("HumanoidRootPart")
+            if root then root.CFrame = CFrame.new(280, -4, 465) end
+        end)
+    else
+        if stasisConn then stasisConn:Disconnect() stasisConn = nil end
+    end
+end)
+
+local maniacConn = nil
+ManiacBtn.MouseButton1Click:Connect(function()
+    local maniacActive = ManiacBtn.Text == "Maniac: ON"
+    maniacActive = not maniacActive
+    ManiacBtn.Text = maniacActive and "Maniac: ON" or "Maniac: OFF"
+    ManiacBtn.BackgroundColor3 = maniacActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if maniacActive then
+        maniacConn = RunService.RenderStepped:Connect(function()
+            local c = player.Character
+            local root = c and c:FindFirstChild("HumanoidRootPart")
+            if root then
+                local mapSize = 2000
+                root.CFrame = CFrame.new(
+                    math.random(-mapSize, mapSize),
+                    math.random(-50, 500),
+                    math.random(-mapSize, mapSize)
+                )
+            end
+        end)
+    else
+        if maniacConn then maniacConn:Disconnect() maniacConn = nil end
+    end
+end)
+
+local rinneganActive = false
+local rinneganConn = nil
+RinneganBtn.MouseButton1Click:Connect(function()
+    rinneganActive = not rinneganActive
+    RinneganX.Visible = rinneganActive
+    RinneganBtn.BackgroundColor3 = rinneganActive and Color3.fromRGB(90,0,160) or Color3.fromRGB(60,0,120)
+    if rinneganActive then
+        camera.CameraType = Enum.CameraType.Scriptable
+        rinneganConn = RunService.RenderStepped:Connect(function()
+            if not currentProfileId then return end
+            local targetPlayer = Players:GetPlayerByUserId(currentProfileId)
+            if targetPlayer and targetPlayer.Character then
+                local torso = targetPlayer.Character:FindFirstChild("UpperTorso")
+                    or targetPlayer.Character:FindFirstChild("Torso")
+                if torso then
+                    camera.CFrame = CFrame.new(torso.Position + Vector3.new(0, 2, 6), torso.Position)
+                end
+            end
+        end)
+    else
+        if rinneganConn then rinneganConn:Disconnect() rinneganConn = nil end
+        camera.CameraType = Enum.CameraType.Custom
+    end
+end)
 HighkeyBtn.MouseButton1Click:Connect(function()
     config.active = not config.active
-    HighkeyBtn.Text = config.active and "Highkey Effect: ON" or "Highkey Effect: OFF"
+    HighkeyBtn.Text = config.active and "Highkey: ON" or "Highkey: OFF"
     HighkeyBtn.BackgroundColor3 = config.active and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
 end)
 
