@@ -49,12 +49,11 @@ task.spawn(function()
 end)
 
 
-UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-UserInputService.MouseIconEnabled = true
 
 local HighkeyHub = Instance.new("ScreenGui")
 HighkeyHub.Name = "HighkeyHub"
 HighkeyHub.ResetOnSpawn = false
+HighkeyHub.DisplayOrder = 9999  -- render ON TOP of all other GUIs
 HighkeyHub.Parent = player:WaitForChild("PlayerGui")
 
 task.defer(function()
@@ -420,7 +419,6 @@ ProfileExpandBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-
 local ProfileResizeHandle = Instance.new("Frame", ProfilePanel)
 ProfileResizeHandle.Size = UDim2.new(0, 14, 0, 14)
 ProfileResizeHandle.Position = UDim2.new(1, -14, 1, -14)
@@ -437,7 +435,6 @@ ProfileHandleLabel.TextColor3 = Color3.fromRGB(200, 160, 255)
 ProfileHandleLabel.Font = Enum.Font.GothamBold
 ProfileHandleLabel.TextSize = 10
 ProfileHandleLabel.ZIndex = 21
-
 
 local profileDragging = false
 local profileResizing = false
@@ -544,7 +541,6 @@ CloseFriendsBtn.MouseButton1Click:Connect(function()
     FriendsPanel.Visible = false
 end)
 
-
 local friendsDragging = false
 local friendsDragStart, friendsStartPos
 
@@ -563,7 +559,6 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 local currentProfileId = nil
-
 
 local showProfile
 
@@ -587,7 +582,6 @@ local function loadFriends(userId)
         local order = 1
         local function processPage(page)
             for _, friendData in ipairs(page) do
-                
                 local row = Instance.new("TextButton", FriendsScroll)
                 row.Size = UDim2.new(1,0,0,46)
                 row.BackgroundColor3 = Color3.fromRGB(22,22,22)
@@ -627,12 +621,10 @@ local function loadFriends(userId)
                 uname.TextSize = 10
                 uname.TextXAlignment = Enum.TextXAlignment.Left
 
-               
                 local capturedId = friendData.Id
                 local capturedDisplayName = friendData.DisplayName
                 local capturedUsername = friendData.Username
 
-                
                 row.MouseEnter:Connect(function()
                     row.BackgroundColor3 = Color3.fromRGB(40,10,60)
                 end)
@@ -640,16 +632,13 @@ local function loadFriends(userId)
                     row.BackgroundColor3 = Color3.fromRGB(22,22,22)
                 end)
 
-                
                 row.MouseButton1Click:Connect(function()
-                   
                     local fakeTarget = {
                         UserId = capturedId,
                         DisplayName = capturedDisplayName,
                         Name = capturedUsername,
-                        AccountAge = 0, 
+                        AccountAge = 0, -- will be fetched via HTTP below
                     }
-                    
                     currentProfileId = capturedId
                     getAvatar(capturedId, ProfileAvatar)
                     ProfileDisplayName.Text = capturedDisplayName
@@ -665,7 +654,6 @@ local function loadFriends(userId)
                     InfoDesc.Text = "..."
 
                     task.spawn(function()
-                        
                         local fok, fresult = pcall(function()
                             local fpages = Players:GetFriendsAsync(capturedId)
                             local count = 0
@@ -679,7 +667,6 @@ local function loadFriends(userId)
                         end)
                         StatFriends.Text = fok and tostring(fresult) or "?"
 
-                        
                         local descOk, descResult = pcall(function()
                             return game:HttpGet("https://users.roblox.com/v1/users/" .. capturedId)
                         end)
@@ -704,7 +691,6 @@ local function loadFriends(userId)
                         else
                             InfoDesc.Text = "No description"
                         end
-                        
                         local ageOk, ageResult = pcall(function()
                             return Players:GetPlayerByUserId(capturedId)
                         end)
@@ -1054,7 +1040,6 @@ end)
 
 local keyObjects = {}
 
-
 local Board = Instance.new("Frame", HighkeyHub)
 Board.Name = "InputOverlayBoard"
 Board.Size = UDim2.new(0,450,0,180)
@@ -1099,7 +1084,6 @@ createKey("Alt",38,124,35,28,"LeftAlt")
 createKey("Space",76,124,150,28,"Space")
 createKey("Enter",229,124,55,28,"Return")
 
-
 local MouseBody=Instance.new("Frame",Board)
 MouseBody.Size=UDim2.new(0,60,0,90) MouseBody.Position=UDim2.new(0,370,0.2,0)
 MouseBody.BackgroundColor3=config.key_bg Instance.new("UICorner",MouseBody).CornerRadius=UDim.new(0,30)
@@ -1107,7 +1091,6 @@ local LMB=Instance.new("Frame",MouseBody) LMB.Size=UDim2.new(0.5,-2,0.4,0) LMB.P
 LMB.BackgroundColor3=Color3.fromRGB(50,50,50) Instance.new("UICorner",LMB)
 local RMB=Instance.new("Frame",MouseBody) RMB.Size=UDim2.new(0.5,-2,0.4,0) RMB.Position=UDim2.new(0.5,1,0,2)
 RMB.BackgroundColor3=Color3.fromRGB(50,50,50) Instance.new("UICorner",RMB)
-
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if input.KeyCode == Enum.KeyCode.M and not processed then
