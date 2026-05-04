@@ -3,1115 +3,899 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local config = {
-    active = false,
-    skyActive = false,
-    intensity = 0,
-    hue = 0,
-    originalFOV = camera.FieldOfView,
-    guiVisible = true,
-    expanded = true,
-    lavender = Color3.fromRGB(200, 160, 255),
-    bg_dark = Color3.fromRGB(15, 15, 15),
-    key_bg = Color3.fromRGB(30, 30, 30)
+    active = false, skyActive = false, intensity = 0, hue = 0,
+    originalFOV = camera.FieldOfView, guiVisible = true, expanded = true,
+    lavender = Color3.fromRGB(200,160,255),
+    bg_dark = Color3.fromRGB(15,15,15),
+    key_bg = Color3.fromRGB(30,30,30)
 }
-
 local originalLighting = {
-    ClockTime = Lighting.ClockTime,
-    Brightness = Lighting.Brightness,
-    ExposureCompensation = Lighting.ExposureCompensation,
-    GlobalShadows = Lighting.GlobalShadows,
-    Ambient = Lighting.Ambient,
-    OutdoorAmbient = Lighting.OutdoorAmbient,
+    ClockTime=Lighting.ClockTime, Brightness=Lighting.Brightness,
+    ExposureCompensation=Lighting.ExposureCompensation, GlobalShadows=Lighting.GlobalShadows,
+    Ambient=Lighting.Ambient, OutdoorAmbient=Lighting.OutdoorAmbient,
 }
-
-
+local legendUsernames = {
+    ["EndOfReset"]=true, ["hakleepm"]=true,
+    ["policemaster12341"]=true, ["roblox_user_2431497402"]=true, ["unclened58"]=true,
+}
 local myFriendIds = {}
 task.spawn(function()
-    local ok, pages = pcall(function()
-        return Players:GetFriendsAsync(player.UserId)
-    end)
+    local ok,pages=pcall(function() return Players:GetFriendsAsync(player.UserId) end)
     if ok then
-        local function processPage(page)
-            for _, friendData in ipairs(page) do
-                myFriendIds[friendData.Id] = true
-            end
-        end
-        processPage(pages:GetCurrentPage())
-        while not pages.IsFinished do
-            pages:AdvanceToNextPageAsync()
-            processPage(pages:GetCurrentPage())
-        end
+        local function proc(page) for _,fd in ipairs(page) do myFriendIds[fd.Id]=true end end
+        proc(pages:GetCurrentPage())
+        while not pages.IsFinished do pages:AdvanceToNextPageAsync() proc(pages:GetCurrentPage()) end
     end
 end)
 
-
-
 local HighkeyHub = Instance.new("ScreenGui")
-HighkeyHub.Name = "HighkeyHub"
-HighkeyHub.ResetOnSpawn = false
-HighkeyHub.DisplayOrder = 9999  -- render ON TOP of all other GUIs
-HighkeyHub.Parent = player:WaitForChild("PlayerGui")
+HighkeyHub.Name="HighkeyHub" HighkeyHub.ResetOnSpawn=false
+HighkeyHub.DisplayOrder=9999 HighkeyHub.Parent=player:WaitForChild("PlayerGui")
 
 task.defer(function()
     task.wait(1)
     game.TextChatService.TextChannels.RBXSystem:DisplaySystemMessage(
-        "<font color='#AA00FF'>  ╔  Yoggs ╝ [You are highkey]</font>"
-    )
+        "<font color='#AA00FF'>  ╔  Yoggs ╝ [You are highkey]</font>")
 end)
-
 task.spawn(function()
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hum = char:WaitForChild("Humanoid", 5)
-    if hum then
-        hum.Jump = true
-        task.wait(0.1)
-        hum.Jump = false
-    end
+    local char=player.Character or player.CharacterAdded:Wait()
+    local hum=char:WaitForChild("Humanoid",5)
+    if hum then hum.Jump=true task.wait(0.1) hum.Jump=false end
 end)
 
-local function getAvatar(userId, imgLabel)
+local function getAvatar(userId,imgLabel)
     task.spawn(function()
-        local ok, result = pcall(function()
-            return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+        local ok,result=pcall(function()
+            return Players:GetUserThumbnailAsync(userId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size100x100)
         end)
-        if ok then imgLabel.Image = result end
+        if ok and imgLabel and imgLabel.Parent then imgLabel.Image=result end
     end)
 end
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 310)
-MainFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
-MainFrame.BackgroundTransparency = 1
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-MainFrame.Parent = HighkeyHub
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+local httpFunc=nil
+pcall(function()
+    if syn and syn.request then httpFunc=syn.request
+    elseif http_request then httpFunc=http_request
+    elseif request then httpFunc=request
+    elseif http and http.request then httpFunc=http.request end
+end)
+local function tryGet(url)
+    if httpFunc then
+        local ok,r=pcall(httpFunc,{Url=url,Method="GET"})
+        if ok and r and r.Body and #r.Body>2 then return r.Body end
+    end
+    local ok2,r2=pcall(function() return game:HttpGet(url) end)
+    if ok2 and r2 and #r2>2 then return r2 end
+    return nil
+end
+local function tryPost(url,body)
+    if not httpFunc then return nil end
+    local ok,r=pcall(httpFunc,{Url=url,Method="POST",Headers={["Content-Type"]="application/json"},Body=body})
+    if ok and r and r.Body then return r.Body end
+    return nil
+end
+local function jd(s)
+    if not s then return nil end
+    local ok,v=pcall(HttpService.JSONDecode,HttpService,s)
+    return ok and v or nil
+end
+local MN={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}
+local function fmtAge(days)
+    if days>=365 then return math.floor(days/365).."yr "..math.floor((days%365)/30).."mo"
+    elseif days>=30 then return math.floor(days/30).."mo"
+    else return days.."d" end
+end
 
-local handle = Instance.new("Frame")
-handle.Size = UDim2.new(0, 12, 0, 12)
-handle.Position = UDim2.new(1, -12, 1, -12)
-handle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-handle.BorderSizePixel = 0
-handle.ZIndex = 50
-handle.Parent = MainFrame
-
-local Stroke = Instance.new("UIStroke", MainFrame)
-Stroke.Color = config.lavender
-Stroke.Thickness = 2
-Stroke.Transparency = 0.5
-
-local function createNeonLine(parent, size, position)
-    local line = Instance.new("Frame")
-    line.Size = size line.Position = position
-    line.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    line.BorderSizePixel = 0 line.ZIndex = 20 line.Parent = parent
-    local s = Instance.new("UIStroke", line)
-    s.Color = Color3.fromRGB(255, 0, 0) s.Thickness = 3 s.Transparency = 0.3
+local MainFrame=Instance.new("Frame")
+MainFrame.Name="MainFrame" MainFrame.Size=UDim2.new(0,300,0,402)
+MainFrame.Position=UDim2.new(0.05,0,0.15,0) MainFrame.BackgroundTransparency=1
+MainFrame.BorderSizePixel=0 MainFrame.ClipsDescendants=true MainFrame.Parent=HighkeyHub
+Instance.new("UICorner",MainFrame).CornerRadius=UDim.new(0,8)
+local handle=Instance.new("Frame",MainFrame)
+handle.Size=UDim2.new(0,12,0,12) handle.Position=UDim2.new(1,-12,1,-12)
+handle.BackgroundColor3=Color3.fromRGB(255,0,0) handle.BorderSizePixel=0 handle.ZIndex=50
+local Stroke=Instance.new("UIStroke",MainFrame)
+Stroke.Color=config.lavender Stroke.Thickness=2 Stroke.Transparency=0.5
+local function createNeonLine(parent,size,position)
+    local line=Instance.new("Frame",parent)
+    line.Size=size line.Position=position line.BackgroundColor3=Color3.fromRGB(255,0,0)
+    line.BorderSizePixel=0 line.ZIndex=20
+    local s=Instance.new("UIStroke",line)
+    s.Color=Color3.fromRGB(255,0,0) s.Thickness=3 s.Transparency=0.3
     return line
 end
-
-local topLine    = createNeonLine(MainFrame, UDim2.new(1,0,0,2),  UDim2.new(0,0,0,0))
-local bottomLine = createNeonLine(MainFrame, UDim2.new(1,0,0,2),  UDim2.new(0,0,1,-2))
-local leftLine   = createNeonLine(MainFrame, UDim2.new(0,2,1,0),  UDim2.new(0,0,0,0))
-local rightLine  = createNeonLine(MainFrame, UDim2.new(0,2,1,0),  UDim2.new(1,-2,0,0))
-
-local BackgroundImage = Instance.new("ImageLabel", MainFrame)
-BackgroundImage.Size = UDim2.new(1,0,1,0)
-BackgroundImage.BackgroundTransparency = 1
-BackgroundImage.Image = "rbxassetid://130192521603899"
-BackgroundImage.ImageTransparency = 0.2
-BackgroundImage.ScaleType = Enum.ScaleType.Crop
-BackgroundImage.ZIndex = 0
-
-local ControlCanvas = Instance.new("CanvasGroup", MainFrame)
-ControlCanvas.Size = UDim2.new(1,0,1,0)
-ControlCanvas.BackgroundTransparency = 1
-ControlCanvas.ZIndex = 10
-
-local Header = Instance.new("Frame", ControlCanvas)
-Header.Size = UDim2.new(1,0,0,40)
-Header.BackgroundTransparency = 1
-
-local Title = Instance.new("TextLabel", Header)
-Title.Size = UDim2.new(1,-80,1,0)
-Title.Position = UDim2.new(0,10,0,0)
-Title.BackgroundTransparency = 1
-Title.Text = "HIGHKEY RETARDED"
-Title.TextColor3 = Color3.fromRGB(170,0,255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 15
-Title.TextXAlignment = Enum.TextXAlignment.Left
-
-local ExpandBtn = Instance.new("TextButton", Header)
-ExpandBtn.Size = UDim2.new(0,70,0,24)
-ExpandBtn.Position = UDim2.new(1,-78,0.5,-12)
-ExpandBtn.BackgroundColor3 = Color3.fromRGB(40,10,60)
-ExpandBtn.Text = "▼ hide"
-ExpandBtn.TextColor3 = Color3.fromRGB(200,100,255)
-ExpandBtn.Font = Enum.Font.GothamBold
-ExpandBtn.TextSize = 11
-Instance.new("UICorner", ExpandBtn).CornerRadius = UDim.new(0,4)
-
-local Body = Instance.new("Frame", ControlCanvas)
-Body.Name = "Body"
-Body.Size = UDim2.new(1,0,1,-40)
-Body.Position = UDim2.new(0,0,0,40)
-Body.BackgroundTransparency = 1
-
-local function makeBtn(text, yPos)
-    local b = Instance.new("TextButton", Body)
-    b.Size = UDim2.new(0,260,0,38)
-    b.Position = UDim2.new(0.5,-130,0,yPos)
-    b.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    b.Text = text b.TextColor3 = Color3.new(1,1,1)
-    b.Font = Enum.Font.SourceSansBold b.TextSize = 15
-    Instance.new("UICorner", b)
-    return b
+local topLine=createNeonLine(MainFrame,UDim2.new(1,0,0,2),UDim2.new(0,0,0,0))
+local bottomLine=createNeonLine(MainFrame,UDim2.new(1,0,0,2),UDim2.new(0,0,1,-2))
+local leftLine=createNeonLine(MainFrame,UDim2.new(0,2,1,0),UDim2.new(0,0,0,0))
+local rightLine=createNeonLine(MainFrame,UDim2.new(0,2,1,0),UDim2.new(1,-2,0,0))
+local BackgroundImage=Instance.new("ImageLabel",MainFrame)
+BackgroundImage.Size=UDim2.new(1,0,1,0) BackgroundImage.BackgroundTransparency=1
+BackgroundImage.Image="rbxassetid://130192521603899" BackgroundImage.ImageTransparency=0.2
+BackgroundImage.ScaleType=Enum.ScaleType.Crop BackgroundImage.ZIndex=0
+local ControlCanvas=Instance.new("CanvasGroup",MainFrame)
+ControlCanvas.Size=UDim2.new(1,0,1,0) ControlCanvas.BackgroundTransparency=1 ControlCanvas.ZIndex=10
+local Header=Instance.new("Frame",ControlCanvas)
+Header.Size=UDim2.new(1,0,0,40) Header.BackgroundTransparency=1
+local Title=Instance.new("TextLabel",Header)
+Title.Size=UDim2.new(1,-80,1,0) Title.Position=UDim2.new(0,10,0,0)
+Title.BackgroundTransparency=1 Title.Text="HIGHKEY RETARDED"
+Title.TextColor3=Color3.fromRGB(170,0,255) Title.Font=Enum.Font.GothamBold
+Title.TextSize=15 Title.TextXAlignment=Enum.TextXAlignment.Left
+local ExpandBtn=Instance.new("TextButton",Header)
+ExpandBtn.Size=UDim2.new(0,70,0,24) ExpandBtn.Position=UDim2.new(1,-78,0.5,-12)
+ExpandBtn.BackgroundColor3=Color3.fromRGB(40,10,60) ExpandBtn.Text="▼ hide"
+ExpandBtn.TextColor3=Color3.fromRGB(200,100,255) ExpandBtn.Font=Enum.Font.GothamBold ExpandBtn.TextSize=11
+Instance.new("UICorner",ExpandBtn).CornerRadius=UDim.new(0,4)
+local Body=Instance.new("Frame",ControlCanvas)
+Body.Name="Body" Body.Size=UDim2.new(1,0,1,-40) Body.Position=UDim2.new(0,0,0,40) Body.BackgroundTransparency=1
+local function makeBtn(text,yPos)
+    local b=Instance.new("TextButton",Body)
+    b.Size=UDim2.new(0,260,0,38) b.Position=UDim2.new(0.5,-130,0,yPos)
+    b.BackgroundColor3=Color3.fromRGB(30,30,30) b.Text=text b.TextColor3=Color3.new(1,1,1)
+    b.Font=Enum.Font.SourceSansBold b.TextSize=15 Instance.new("UICorner",b) return b
 end
-
-local function makeHalfBtn(text, yPos, xOffset)
-    local b = Instance.new("TextButton", Body)
-    b.Size = UDim2.new(0,126,0,38)
-    b.Position = UDim2.new(0.5,-130+xOffset,0,yPos)
-    b.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    b.Text = text b.TextColor3 = Color3.new(1,1,1)
-    b.Font = Enum.Font.SourceSansBold b.TextSize = 13
-    Instance.new("UICorner", b)
-    return b
+local function makeHalfBtn(text,yPos,xOffset)
+    local b=Instance.new("TextButton",Body)
+    b.Size=UDim2.new(0,126,0,38) b.Position=UDim2.new(0.5,-130+xOffset,0,yPos)
+    b.BackgroundColor3=Color3.fromRGB(30,30,30) b.Text=text b.TextColor3=Color3.new(1,1,1)
+    b.Font=Enum.Font.SourceSansBold b.TextSize=13 Instance.new("UICorner",b) return b
 end
+local HighkeyBtn=makeHalfBtn("Highkey: OFF",8,0)
+local ManiacBtn=makeHalfBtn("Maniac: OFF",8,134)
+local SkyBtn=makeHalfBtn("Skybox: OFF",54,0)
+local TornadoBtn=makeHalfBtn("Tornado: OFF",54,134)
+local KakuBtn=makeBtn("Kaku: OFF",100)
+local StasisBtn=makeBtn("Stasis: OFF",146)
+local PlayersLabel=Instance.new("TextLabel",Body)
+PlayersLabel.Size=UDim2.new(0,260,0,16) PlayersLabel.Position=UDim2.new(0.5,-130,0,192)
+PlayersLabel.BackgroundTransparency=1 PlayersLabel.Text="PLAYERS IN SERVER"
+PlayersLabel.TextColor3=Color3.fromRGB(100,100,100) PlayersLabel.Font=Enum.Font.GothamBold
+PlayersLabel.TextSize=10 PlayersLabel.TextXAlignment=Enum.TextXAlignment.Left
+local PlayerScroll=Instance.new("ScrollingFrame",Body)
+PlayerScroll.Size=UDim2.new(0,260,0,140) PlayerScroll.Position=UDim2.new(0.5,-130,0,212)
+PlayerScroll.BackgroundColor3=Color3.fromRGB(18,18,18) PlayerScroll.BorderSizePixel=0
+PlayerScroll.ScrollBarThickness=3 PlayerScroll.ScrollBarImageColor3=Color3.fromRGB(130,0,200)
+PlayerScroll.CanvasSize=UDim2.new(0,0,0,0)
+Instance.new("UICorner",PlayerScroll).CornerRadius=UDim.new(0,6)
+local PlayerListLayout=Instance.new("UIListLayout",PlayerScroll)
+PlayerListLayout.Padding=UDim.new(0,3) PlayerListLayout.SortOrder=Enum.SortOrder.Name
+local PlayerListPad=Instance.new("UIPadding",PlayerScroll)
+PlayerListPad.PaddingTop=UDim.new(0,4) PlayerListPad.PaddingLeft=UDim.new(0,4)
+PlayerListPad.PaddingRight=UDim.new(0,4) PlayerListPad.PaddingBottom=UDim.new(0,4)
+local ClosePlayersBtn=Instance.new("TextButton",Body)
+ClosePlayersBtn.Size=UDim2.new(0,260,0,28) ClosePlayersBtn.Position=UDim2.new(0.5,-130,0,360)
+ClosePlayersBtn.BackgroundColor3=Color3.fromRGB(35,35,35) ClosePlayersBtn.Text="▲ collapse players"
+ClosePlayersBtn.TextColor3=Color3.fromRGB(180,180,180) ClosePlayersBtn.Font=Enum.Font.GothamBold
+ClosePlayersBtn.TextSize=11
+Instance.new("UICorner",ClosePlayersBtn).CornerRadius=UDim.new(0,5)
 
-local HighkeyBtn = makeHalfBtn("Highkey: OFF", 8, 0)
-local ManiacBtn  = makeHalfBtn("Maniac: OFF", 8, 134)
-local SkyBtn     = makeHalfBtn("Skybox: OFF", 54, 0)
-local TornadoBtn = makeHalfBtn("Tornado: OFF", 54, 134)
-local KakuBtn    = makeBtn("Kaku: OFF", 100)
-local StasisBtn  = makeBtn("Stasis: OFF", 146)
+local profileExpanded=true
+local currentProfileId=nil
+local moreInfoActive=false
 
-local PlayersLabel = Instance.new("TextLabel", Body)
-PlayersLabel.Size = UDim2.new(0,260,0,16)
-PlayersLabel.Position = UDim2.new(0.5,-130,0,192)
-PlayersLabel.BackgroundTransparency = 1
-PlayersLabel.Text = "PLAYERS IN SERVER"
-PlayersLabel.TextColor3 = Color3.fromRGB(100,100,100)
-PlayersLabel.Font = Enum.Font.GothamBold
-PlayersLabel.TextSize = 10
-PlayersLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local PlayerScroll = Instance.new("ScrollingFrame", Body)
-PlayerScroll.Size = UDim2.new(0,260,0,140)
-PlayerScroll.Position = UDim2.new(0.5,-130,0,212)
-PlayerScroll.BackgroundColor3 = Color3.fromRGB(18,18,18)
-PlayerScroll.BorderSizePixel = 0
-PlayerScroll.ScrollBarThickness = 3
-PlayerScroll.ScrollBarImageColor3 = Color3.fromRGB(130,0,200)
-PlayerScroll.CanvasSize = UDim2.new(0,0,0,0)
-Instance.new("UICorner", PlayerScroll).CornerRadius = UDim.new(0,6)
-
-local PlayerListLayout = Instance.new("UIListLayout", PlayerScroll)
-PlayerListLayout.Padding = UDim.new(0,3)
-PlayerListLayout.SortOrder = Enum.SortOrder.Name
-
-local PlayerListPad = Instance.new("UIPadding", PlayerScroll)
-PlayerListPad.PaddingTop = UDim.new(0,4)
-PlayerListPad.PaddingLeft = UDim.new(0,4)
-PlayerListPad.PaddingRight = UDim.new(0,4)
-PlayerListPad.PaddingBottom = UDim.new(0,4)
-
-local ClosePlayersBtn = Instance.new("TextButton", Body)
-ClosePlayersBtn.Size = UDim2.new(0,260,0,28)
-ClosePlayersBtn.Position = UDim2.new(0.5,-130,0,360)
-ClosePlayersBtn.BackgroundColor3 = Color3.fromRGB(35,35,35)
-ClosePlayersBtn.Text = "▲ collapse players"
-ClosePlayersBtn.TextColor3 = Color3.fromRGB(180,180,180)
-ClosePlayersBtn.Font = Enum.Font.GothamBold
-ClosePlayersBtn.TextSize = 11
-Instance.new("UICorner", ClosePlayersBtn).CornerRadius = UDim.new(0,5)
-
-
-
-
-local profileExpanded = true
-
-local ProfilePanel = Instance.new("Frame", HighkeyHub)
-ProfilePanel.Name = "ProfilePanel"
-ProfilePanel.Size = UDim2.new(0,280,0,380)
-ProfilePanel.Position = UDim2.new(0.05,310,0.15,0)
-ProfilePanel.BackgroundColor3 = Color3.fromRGB(13,13,13)
-ProfilePanel.BackgroundTransparency = 0.05
-ProfilePanel.BorderSizePixel = 0
-ProfilePanel.Visible = false
-ProfilePanel.ClipsDescendants = true
-Instance.new("UICorner", ProfilePanel).CornerRadius = UDim.new(0,10)
-
-local ProfileStroke = Instance.new("UIStroke", ProfilePanel)
-ProfileStroke.Color = config.lavender
-ProfileStroke.Thickness = 1.5
-ProfileStroke.Transparency = 0.5
-
-local ProfileTop = Instance.new("Frame", ProfilePanel)
-ProfileTop.Size = UDim2.new(1,0,0,100)
-ProfileTop.BackgroundColor3 = Color3.fromRGB(10,10,10)
-ProfileTop.BorderSizePixel = 0
-Instance.new("UICorner", ProfileTop).CornerRadius = UDim.new(0,10)
-
-
-local ProfileCloseBtn = Instance.new("TextButton", ProfileTop)
-ProfileCloseBtn.Size = UDim2.new(0,24,0,24)
-ProfileCloseBtn.Position = UDim2.new(1,-30,0,8)
-ProfileCloseBtn.BackgroundColor3 = Color3.fromRGB(60,0,100)
-ProfileCloseBtn.Text = "✕"
-ProfileCloseBtn.TextColor3 = Color3.fromRGB(200,130,255)
-ProfileCloseBtn.Font = Enum.Font.GothamBold
-ProfileCloseBtn.TextSize = 11
-ProfileCloseBtn.ZIndex = 5
-Instance.new("UICorner", ProfileCloseBtn).CornerRadius = UDim.new(0,5)
-
-ProfileCloseBtn.MouseButton1Click:Connect(function()
-    ProfilePanel.Visible = false
-    FriendsPanel.Visible = false
+local ProfilePanel=Instance.new("Frame",HighkeyHub)
+ProfilePanel.Name="ProfilePanel" ProfilePanel.Size=UDim2.new(0,280,0,380)
+ProfilePanel.Position=UDim2.new(0.05,310,0.15,0) ProfilePanel.BackgroundColor3=Color3.fromRGB(13,13,13)
+ProfilePanel.BackgroundTransparency=0.05 ProfilePanel.BorderSizePixel=0
+ProfilePanel.Visible=false ProfilePanel.ClipsDescendants=true
+Instance.new("UICorner",ProfilePanel).CornerRadius=UDim.new(0,10)
+local ProfileStroke=Instance.new("UIStroke",ProfilePanel)
+ProfileStroke.Color=config.lavender ProfileStroke.Thickness=1.5 ProfileStroke.Transparency=0.5
+local ProfileTop=Instance.new("Frame",ProfilePanel)
+ProfileTop.Size=UDim2.new(1,0,0,100) ProfileTop.BackgroundColor3=Color3.fromRGB(10,10,10) ProfileTop.BorderSizePixel=0
+Instance.new("UICorner",ProfileTop).CornerRadius=UDim.new(0,10)
+local ProfileCloseBtn=Instance.new("TextButton",ProfileTop)
+ProfileCloseBtn.Size=UDim2.new(0,24,0,24) ProfileCloseBtn.Position=UDim2.new(1,-30,0,8)
+ProfileCloseBtn.BackgroundColor3=Color3.fromRGB(60,0,100) ProfileCloseBtn.Text="✕"
+ProfileCloseBtn.TextColor3=Color3.fromRGB(200,130,255) ProfileCloseBtn.Font=Enum.Font.GothamBold
+ProfileCloseBtn.TextSize=11 ProfileCloseBtn.ZIndex=5
+Instance.new("UICorner",ProfileCloseBtn).CornerRadius=UDim.new(0,5)
+local ProfileExpandBtn=Instance.new("TextButton",ProfileTop)
+ProfileExpandBtn.Size=UDim2.new(0,24,0,24) ProfileExpandBtn.Position=UDim2.new(1,-58,0,8)
+ProfileExpandBtn.BackgroundColor3=Color3.fromRGB(40,10,60) ProfileExpandBtn.Text="▼"
+ProfileExpandBtn.TextColor3=Color3.fromRGB(200,130,255) ProfileExpandBtn.Font=Enum.Font.GothamBold
+ProfileExpandBtn.TextSize=11 ProfileExpandBtn.ZIndex=5
+Instance.new("UICorner",ProfileExpandBtn).CornerRadius=UDim.new(0,5)
+local ProfileAvatar=Instance.new("ImageLabel",ProfileTop)
+ProfileAvatar.Size=UDim2.new(0,64,0,64) ProfileAvatar.Position=UDim2.new(0,12,0,18)
+ProfileAvatar.BackgroundColor3=Color3.fromRGB(35,35,35) ProfileAvatar.Image=""
+Instance.new("UICorner",ProfileAvatar).CornerRadius=UDim.new(0,8)
+local AvatarStroke=Instance.new("UIStroke",ProfileAvatar)
+AvatarStroke.Color=config.lavender AvatarStroke.Thickness=1.5 AvatarStroke.Transparency=0.4
+local ProfileDisplayName=Instance.new("TextLabel",ProfileTop)
+ProfileDisplayName.Size=UDim2.new(1,-90,0,22) ProfileDisplayName.Position=UDim2.new(0,86,0,20)
+ProfileDisplayName.BackgroundTransparency=1 ProfileDisplayName.Text=""
+ProfileDisplayName.TextColor3=Color3.new(1,1,1) ProfileDisplayName.Font=Enum.Font.GothamBold
+ProfileDisplayName.TextSize=15 ProfileDisplayName.TextXAlignment=Enum.TextXAlignment.Left
+local ProfileUsername=Instance.new("TextLabel",ProfileTop)
+ProfileUsername.Size=UDim2.new(1,-90,0,16) ProfileUsername.Position=UDim2.new(0,86,0,44)
+ProfileUsername.BackgroundTransparency=1 ProfileUsername.Text=""
+ProfileUsername.TextColor3=Color3.fromRGB(140,140,140) ProfileUsername.Font=Enum.Font.Gotham
+ProfileUsername.TextSize=12 ProfileUsername.TextXAlignment=Enum.TextXAlignment.Left
+local YouBadge=Instance.new("TextLabel",ProfileTop)
+YouBadge.Size=UDim2.new(0,36,0,16) YouBadge.Position=UDim2.new(0,86,0,64)
+YouBadge.BackgroundColor3=Color3.fromRGB(80,0,140) YouBadge.Text="you"
+YouBadge.TextColor3=Color3.fromRGB(200,130,255) YouBadge.Font=Enum.Font.GothamBold
+YouBadge.TextSize=10 YouBadge.Visible=false
+Instance.new("UICorner",YouBadge).CornerRadius=UDim.new(0,3)
+local LegendBadge=Instance.new("TextLabel",ProfileTop)
+LegendBadge.Size=UDim2.new(0,64,0,16) LegendBadge.Position=UDim2.new(0,128,0,64)
+LegendBadge.BackgroundColor3=Color3.fromRGB(110,75,0) LegendBadge.Text="⚜ Legend"
+LegendBadge.TextColor3=Color3.fromRGB(255,215,0) LegendBadge.Font=Enum.Font.GothamBold
+LegendBadge.TextSize=10 LegendBadge.Visible=false
+Instance.new("UICorner",LegendBadge).CornerRadius=UDim.new(0,3)
+local LBS=Instance.new("UIStroke",LegendBadge)
+LBS.Color=Color3.fromRGB(255,200,0) LBS.Thickness=1 LBS.Transparency=0.3
+local ProfileBody=Instance.new("Frame",ProfilePanel)
+ProfileBody.Name="ProfileBody" ProfileBody.Size=UDim2.new(1,0,1,-100)
+ProfileBody.Position=UDim2.new(0,0,0,100) ProfileBody.BackgroundTransparency=1 ProfileBody.BorderSizePixel=0
+local function makeStatCard(labelText,xOffset)
+    local card=Instance.new("Frame",ProfileBody)
+    card.Size=UDim2.new(0,78,0,52) card.Position=UDim2.new(0,xOffset,0,8)
+    card.BackgroundColor3=Color3.fromRGB(22,22,22) card.BorderSizePixel=0
+    Instance.new("UICorner",card).CornerRadius=UDim.new(0,6)
+    local val=Instance.new("TextLabel",card)
+    val.Size=UDim2.new(1,0,0,28) val.Position=UDim2.new(0,0,0,8)
+    val.BackgroundTransparency=1 val.Text="—" val.TextColor3=Color3.new(1,1,1)
+    val.Font=Enum.Font.GothamBold val.TextSize=16 val.TextXAlignment=Enum.TextXAlignment.Center
+    local lbl=Instance.new("TextLabel",card)
+    lbl.Size=UDim2.new(1,0,0,14) lbl.Position=UDim2.new(0,0,0,34)
+    lbl.BackgroundTransparency=1 lbl.Text=labelText lbl.TextColor3=Color3.fromRGB(100,100,100)
+    lbl.Font=Enum.Font.Gotham lbl.TextSize=10 lbl.TextXAlignment=Enum.TextXAlignment.Center
+    return val
+end
+local StatFriends=makeStatCard("Friends",12)
+local StatAge=makeStatCard("Acct age",100)
+local StatID=makeStatCard("User ID",188)
+local function makeInfoRow(labelText,yPos)
+    local row=Instance.new("Frame",ProfileBody)
+    row.Size=UDim2.new(1,-24,0,26) row.Position=UDim2.new(0,12,0,yPos)
+    row.BackgroundTransparency=1 row.BorderSizePixel=0
+    local div=Instance.new("Frame",row)
+    div.Size=UDim2.new(1,0,0,1) div.Position=UDim2.new(0,0,1,-1)
+    div.BackgroundColor3=Color3.fromRGB(40,40,40) div.BorderSizePixel=0
+    local key=Instance.new("TextLabel",row)
+    key.Size=UDim2.new(0.45,0,1,0) key.BackgroundTransparency=1 key.Text=labelText
+    key.TextColor3=Color3.fromRGB(110,110,110) key.Font=Enum.Font.Gotham
+    key.TextSize=11 key.TextXAlignment=Enum.TextXAlignment.Left
+    local val=Instance.new("TextLabel",row)
+    val.Size=UDim2.new(0.55,0,1,0) val.Position=UDim2.new(0.45,0,0,0)
+    val.BackgroundTransparency=1 val.Text="—" val.TextColor3=Color3.fromRGB(210,210,210)
+    val.Font=Enum.Font.GothamBold val.TextSize=11 val.TextXAlignment=Enum.TextXAlignment.Right
+    val.TextTruncate=Enum.TextTruncate.AtEnd
+    return val
+end
+local InfoDisplay=makeInfoRow("Display name",70)
+local InfoUsername=makeInfoRow("Username",100)
+local InfoCreated=makeInfoRow("Created",130)
+local InfoDesc=makeInfoRow("Description",160)
+local ViewFriendsBtn=Instance.new("TextButton",ProfileBody)
+ViewFriendsBtn.Size=UDim2.new(0,120,0,34) ViewFriendsBtn.Position=UDim2.new(0,12,0,198)
+ViewFriendsBtn.BackgroundColor3=Color3.fromRGB(50,0,100) ViewFriendsBtn.Text="View Friends"
+ViewFriendsBtn.TextColor3=Color3.new(1,1,1) ViewFriendsBtn.Font=Enum.Font.GothamBold ViewFriendsBtn.TextSize=12
+Instance.new("UICorner",ViewFriendsBtn).CornerRadius=UDim.new(0,6)
+local MoreInfoBtn=Instance.new("TextButton",ProfileBody)
+MoreInfoBtn.Size=UDim2.new(0,120,0,34) MoreInfoBtn.Position=UDim2.new(0,140,0,198)
+MoreInfoBtn.BackgroundColor3=Color3.fromRGB(0,60,80) MoreInfoBtn.Text="⬡ More Info"
+MoreInfoBtn.TextColor3=Color3.fromRGB(0,220,255) MoreInfoBtn.Font=Enum.Font.GothamBold
+MoreInfoBtn.TextSize=12 MoreInfoBtn.BorderSizePixel=0
+Instance.new("UICorner",MoreInfoBtn).CornerRadius=UDim.new(0,6)
+local MIS=Instance.new("UIStroke",MoreInfoBtn)
+MIS.Color=Color3.fromRGB(0,200,255) MIS.Thickness=1.2 MIS.Transparency=0.3
+local CopyBtn=Instance.new("TextButton",ProfileBody)
+CopyBtn.Size=UDim2.new(1,-66,0,34) CopyBtn.Position=UDim2.new(0,12,0,240)
+CopyBtn.BackgroundColor3=Color3.fromRGB(70,0,130) CopyBtn.Text="Copy profile link"
+CopyBtn.TextColor3=Color3.new(1,1,1) CopyBtn.Font=Enum.Font.GothamBold CopyBtn.TextSize=13
+Instance.new("UICorner",CopyBtn).CornerRadius=UDim.new(0,6)
+local RinneganBtn=Instance.new("TextButton",ProfileBody)
+RinneganBtn.Size=UDim2.new(0,38,0,34) RinneganBtn.Position=UDim2.new(1,-50,0,240)
+RinneganBtn.BackgroundColor3=Color3.fromRGB(60,0,120) RinneganBtn.Text="👁"
+RinneganBtn.TextSize=18 RinneganBtn.Font=Enum.Font.GothamBold
+RinneganBtn.TextColor3=Color3.fromRGB(180,100,255) RinneganBtn.BorderSizePixel=0
+Instance.new("UICorner",RinneganBtn).CornerRadius=UDim.new(0,6)
+local RS2=Instance.new("UIStroke",RinneganBtn)
+RS2.Color=Color3.fromRGB(140,0,255) RS2.Thickness=1.5
+local RinneganX=Instance.new("TextLabel",RinneganBtn)
+RinneganX.Size=UDim2.new(1,0,1,0) RinneganX.BackgroundTransparency=1
+RinneganX.Text="✕" RinneganX.TextColor3=Color3.fromRGB(255,80,80)
+RinneganX.Font=Enum.Font.GothamBold RinneganX.TextSize=14 RinneganX.Visible=false
+local PROFILE_EXPANDED_H=380
+local PROFILE_COLLAPSED_H=100
+ProfileExpandBtn.MouseButton1Click:Connect(function()
+    profileExpanded=not profileExpanded
+    if profileExpanded then
+        ProfileExpandBtn.Text="▼" ProfileBody.Visible=true
+        TweenService:Create(ProfilePanel,TweenInfo.new(0.25),{Size=UDim2.new(0,280,0,PROFILE_EXPANDED_H)}):Play()
+    else
+        ProfileExpandBtn.Text="▶"
+        TweenService:Create(ProfilePanel,TweenInfo.new(0.25),{Size=UDim2.new(0,280,0,PROFILE_COLLAPSED_H)}):Play()
+        task.delay(0.25,function() if not profileExpanded then ProfileBody.Visible=false end end)
+    end
+end)
+local ProfileResizeHandle=Instance.new("Frame",ProfilePanel)
+ProfileResizeHandle.Size=UDim2.new(0,14,0,14) ProfileResizeHandle.Position=UDim2.new(1,-14,1,-14)
+ProfileResizeHandle.BackgroundColor3=Color3.fromRGB(120,60,200) ProfileResizeHandle.BackgroundTransparency=0.4
+ProfileResizeHandle.BorderSizePixel=0 ProfileResizeHandle.ZIndex=20
+Instance.new("UICorner",ProfileResizeHandle).CornerRadius=UDim.new(0,3)
+local PHL=Instance.new("TextLabel",ProfileResizeHandle)
+PHL.Size=UDim2.new(1,0,1,0) PHL.BackgroundTransparency=1 PHL.Text="⊿"
+PHL.TextColor3=Color3.fromRGB(200,160,255) PHL.Font=Enum.Font.GothamBold PHL.TextSize=10 PHL.ZIndex=21
+local profileDragging=false local profileResizing=false
+local profileDragStart,profileStartPos,profileResizeStart,profileStartSize
+local profileMinSize=Vector2.new(200,150)
+ProfilePanel.InputBegan:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.MouseButton1 then
+        local mp=input.Position local fp=ProfilePanel.AbsolutePosition local fs=ProfilePanel.AbsoluteSize
+        if mp.X>fp.X+fs.X-18 and mp.Y>fp.Y+fs.Y-18 then
+            profileResizing=true profileResizeStart=mp profileStartSize=fs
+        else profileDragging=true profileDragStart=mp profileStartPos=ProfilePanel.Position end
+    end
 end)
 
-
-local ProfileExpandBtn = Instance.new("TextButton", ProfileTop)
-ProfileExpandBtn.Size = UDim2.new(0,24,0,24)
-ProfileExpandBtn.Position = UDim2.new(1,-58,0,8)
-ProfileExpandBtn.BackgroundColor3 = Color3.fromRGB(40,10,60)
-ProfileExpandBtn.Text = "▼"
-ProfileExpandBtn.TextColor3 = Color3.fromRGB(200,130,255)
-ProfileExpandBtn.Font = Enum.Font.GothamBold
-ProfileExpandBtn.TextSize = 11
-ProfileExpandBtn.ZIndex = 5
-Instance.new("UICorner", ProfileExpandBtn).CornerRadius = UDim.new(0,5)
-
-local ProfileAvatar = Instance.new("ImageLabel", ProfileTop)
-ProfileAvatar.Size = UDim2.new(0,64,0,64)
-ProfileAvatar.Position = UDim2.new(0,12,0,18)
-ProfileAvatar.BackgroundColor3 = Color3.fromRGB(35,35,35)
-ProfileAvatar.Image = ""
-Instance.new("UICorner", ProfileAvatar).CornerRadius = UDim.new(0,8)
-local AvatarStroke = Instance.new("UIStroke", ProfileAvatar)
-AvatarStroke.Color = config.lavender AvatarStroke.Thickness = 1.5 AvatarStroke.Transparency = 0.4
-
-local ProfileDisplayName = Instance.new("TextLabel", ProfileTop)
-ProfileDisplayName.Size = UDim2.new(1,-90,0,22)
-ProfileDisplayName.Position = UDim2.new(0,86,0,20)
-ProfileDisplayName.BackgroundTransparency = 1
-ProfileDisplayName.Text = ""
-ProfileDisplayName.TextColor3 = Color3.new(1,1,1)
-ProfileDisplayName.Font = Enum.Font.GothamBold
-ProfileDisplayName.TextSize = 15
-ProfileDisplayName.TextXAlignment = Enum.TextXAlignment.Left
-
-local ProfileUsername = Instance.new("TextLabel", ProfileTop)
-ProfileUsername.Size = UDim2.new(1,-90,0,16)
-ProfileUsername.Position = UDim2.new(0,86,0,44)
-ProfileUsername.BackgroundTransparency = 1
-ProfileUsername.Text = ""
-ProfileUsername.TextColor3 = Color3.fromRGB(140,140,140)
-ProfileUsername.Font = Enum.Font.Gotham
-ProfileUsername.TextSize = 12
-ProfileUsername.TextXAlignment = Enum.TextXAlignment.Left
-
-local YouBadge = Instance.new("TextLabel", ProfileTop)
-YouBadge.Size = UDim2.new(0,36,0,16)
-YouBadge.Position = UDim2.new(0,86,0,64)
-YouBadge.BackgroundColor3 = Color3.fromRGB(80,0,140)
-YouBadge.Text = "you"
-YouBadge.TextColor3 = Color3.fromRGB(200,130,255)
-YouBadge.Font = Enum.Font.GothamBold
-YouBadge.TextSize = 10
-YouBadge.Visible = false
-Instance.new("UICorner", YouBadge).CornerRadius = UDim.new(0,3)
-
-
-local ProfileBody = Instance.new("Frame", ProfilePanel)
-ProfileBody.Name = "ProfileBody"
-ProfileBody.Size = UDim2.new(1,0,1,-100)
-ProfileBody.Position = UDim2.new(0,0,0,100)
-ProfileBody.BackgroundTransparency = 1
-ProfileBody.BorderSizePixel = 0
-
-local function makeStatCard(labelText, xOffset)
-    local card = Instance.new("Frame", ProfileBody)
-    card.Size = UDim2.new(0,78,0,52)
-    card.Position = UDim2.new(0,xOffset,0,8)
-    card.BackgroundColor3 = Color3.fromRGB(22,22,22)
-    card.BorderSizePixel = 0
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0,6)
-    local val = Instance.new("TextLabel", card)
-    val.Size = UDim2.new(1,0,0,28)
-    val.Position = UDim2.new(0,0,0,8)
-    val.BackgroundTransparency = 1
-    val.Text = "—"
-    val.TextColor3 = Color3.new(1,1,1)
-    val.Font = Enum.Font.GothamBold
-    val.TextSize = 16
-    val.TextXAlignment = Enum.TextXAlignment.Center
-    local lbl = Instance.new("TextLabel", card)
-    lbl.Size = UDim2.new(1,0,0,14)
-    lbl.Position = UDim2.new(0,0,0,34)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = labelText
-    lbl.TextColor3 = Color3.fromRGB(100,100,100)
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextSize = 10
-    lbl.TextXAlignment = Enum.TextXAlignment.Center
-    return val
+local HudPanel=Instance.new("Frame",HighkeyHub)
+HudPanel.Name="HudPanel" HudPanel.Size=UDim2.new(0,420,0,500)
+HudPanel.Position=UDim2.new(0.5,-210,0.5,-250) HudPanel.BackgroundColor3=Color3.fromRGB(0,8,16)
+HudPanel.BackgroundTransparency=0.05 HudPanel.BorderSizePixel=0
+HudPanel.Visible=false HudPanel.ClipsDescendants=true HudPanel.ZIndex=200
+Instance.new("UICorner",HudPanel).CornerRadius=UDim.new(0,4)
+local HudStroke=Instance.new("UIStroke",HudPanel)
+HudStroke.Color=Color3.fromRGB(0,220,255) HudStroke.Thickness=1.5
+local function makeBracket(panel,anchorX,anchorY,rotX,rotY)
+    local b=Instance.new("Frame",panel) b.Size=UDim2.new(0,20,0,20)
+    b.AnchorPoint=Vector2.new(anchorX,anchorY) b.Position=UDim2.new(anchorX,rotX,anchorY,rotY)
+    b.BackgroundTransparency=1 b.BorderSizePixel=0 b.ZIndex=202
+    local h=Instance.new("Frame",b) h.Size=UDim2.new(1,0,0,2) h.BackgroundColor3=Color3.fromRGB(0,220,255) h.BorderSizePixel=0 h.ZIndex=202
+    local v=Instance.new("Frame",b) v.Size=UDim2.new(0,2,1,0) v.BackgroundColor3=Color3.fromRGB(0,220,255) v.BorderSizePixel=0 v.ZIndex=202
+    if anchorX==1 then v.Position=UDim2.new(1,-2,0,0) end
+    if anchorY==1 then h.Position=UDim2.new(0,0,1,-2) end
 end
-
-local StatFriends = makeStatCard("Friends", 12)
-local StatAge     = makeStatCard("Acct age", 100)
-local StatID      = makeStatCard("User ID", 188)
-
-local function makeInfoRow(labelText, yPos)
-    local row = Instance.new("Frame", ProfileBody)
-    row.Size = UDim2.new(1,-24,0,26)
-    row.Position = UDim2.new(0,12,0,yPos)
-    row.BackgroundTransparency = 1
-    row.BorderSizePixel = 0
-    local div = Instance.new("Frame", row)
-    div.Size = UDim2.new(1,0,0,1)
-    div.Position = UDim2.new(0,0,1,-1)
-    div.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    div.BorderSizePixel = 0
-    local key = Instance.new("TextLabel", row)
-    key.Size = UDim2.new(0.45,0,1,0)
-    key.BackgroundTransparency = 1
-    key.Text = labelText
-    key.TextColor3 = Color3.fromRGB(110,110,110)
-    key.Font = Enum.Font.Gotham key.TextSize = 11
-    key.TextXAlignment = Enum.TextXAlignment.Left
-    local val = Instance.new("TextLabel", row)
-    val.Size = UDim2.new(0.55,0,1,0)
-    val.Position = UDim2.new(0.45,0,0,0)
-    val.BackgroundTransparency = 1
-    val.Text = "—"
-    val.TextColor3 = Color3.fromRGB(210,210,210)
-    val.Font = Enum.Font.GothamBold val.TextSize = 11
-    val.TextXAlignment = Enum.TextXAlignment.Right
-    val.TextTruncate = Enum.TextTruncate.AtEnd
-    return val
+makeBracket(HudPanel,0,0,-4,-4) makeBracket(HudPanel,1,0,4,-4)
+makeBracket(HudPanel,0,1,-4,4) makeBracket(HudPanel,1,1,4,4)
+local HudHeader=Instance.new("Frame",HudPanel)
+HudHeader.Size=UDim2.new(1,0,0,36) HudHeader.BackgroundColor3=Color3.fromRGB(0,30,50)
+HudHeader.BorderSizePixel=0 HudHeader.ZIndex=202
+Instance.new("UICorner",HudHeader).CornerRadius=UDim.new(0,4)
+local HudTitleIcon=Instance.new("TextLabel",HudHeader)
+HudTitleIcon.Size=UDim2.new(0,30,1,0) HudTitleIcon.Position=UDim2.new(0,8,0,0)
+HudTitleIcon.BackgroundTransparency=1 HudTitleIcon.Text="◈" HudTitleIcon.TextColor3=Color3.fromRGB(0,220,255)
+HudTitleIcon.Font=Enum.Font.GothamBold HudTitleIcon.TextSize=14 HudTitleIcon.ZIndex=203
+local HudTitle=Instance.new("TextLabel",HudHeader)
+HudTitle.Size=UDim2.new(1,-80,1,0) HudTitle.Position=UDim2.new(0,36,0,0)
+HudTitle.BackgroundTransparency=1 HudTitle.Text="EXTENDED PROFILE INTEL"
+HudTitle.TextColor3=Color3.fromRGB(0,220,255) HudTitle.Font=Enum.Font.GothamBold
+HudTitle.TextSize=11 HudTitle.TextXAlignment=Enum.TextXAlignment.Left HudTitle.ZIndex=203
+local HudSubtitle=Instance.new("TextLabel",HudHeader)
+HudSubtitle.Size=UDim2.new(1,-80,0,12) HudSubtitle.Position=UDim2.new(0,36,1,-14)
+HudSubtitle.BackgroundTransparency=1 HudSubtitle.Text="ROBLOX PUBLIC DATA // HIGHKEY SYSTEMS"
+HudSubtitle.TextColor3=Color3.fromRGB(0,120,160) HudSubtitle.Font=Enum.Font.Gotham
+HudSubtitle.TextSize=8 HudSubtitle.TextXAlignment=Enum.TextXAlignment.Left HudSubtitle.ZIndex=203
+local HudCloseBtn=Instance.new("TextButton",HudHeader)
+HudCloseBtn.Size=UDim2.new(0,28,0,22) HudCloseBtn.Position=UDim2.new(1,-34,0.5,-11)
+HudCloseBtn.BackgroundColor3=Color3.fromRGB(0,50,70) HudCloseBtn.Text="✕"
+HudCloseBtn.TextColor3=Color3.fromRGB(0,200,255) HudCloseBtn.Font=Enum.Font.GothamBold
+HudCloseBtn.TextSize=11 HudCloseBtn.ZIndex=204
+Instance.new("UICorner",HudCloseBtn).CornerRadius=UDim.new(0,3)
+Instance.new("Frame",HudPanel).Size=UDim2.new(1,0,0,1)
+local HudDivider=HudPanel:FindFirstChildOfClass("Frame")
+HudDivider.Position=UDim2.new(0,0,0,36) HudDivider.BackgroundColor3=Color3.fromRGB(0,180,255) HudDivider.BorderSizePixel=0 HudDivider.ZIndex=202
+local HudAvatarFrame=Instance.new("Frame",HudPanel)
+HudAvatarFrame.Size=UDim2.new(0,90,0,90) HudAvatarFrame.Position=UDim2.new(0,12,0,46)
+HudAvatarFrame.BackgroundColor3=Color3.fromRGB(0,20,35) HudAvatarFrame.BorderSizePixel=0 HudAvatarFrame.ZIndex=202
+Instance.new("UICorner",HudAvatarFrame).CornerRadius=UDim.new(0,6)
+local HAS=Instance.new("UIStroke",HudAvatarFrame) HAS.Color=Color3.fromRGB(0,180,255) HAS.Thickness=1.2
+local HudAvatar=Instance.new("ImageLabel",HudAvatarFrame)
+HudAvatar.Size=UDim2.new(1,-4,1,-4) HudAvatar.Position=UDim2.new(0,2,0,2)
+HudAvatar.BackgroundTransparency=1 HudAvatar.Image="" HudAvatar.ZIndex=203
+Instance.new("UICorner",HudAvatar).CornerRadius=UDim.new(0,4)
+local StatusDot=Instance.new("Frame",HudAvatarFrame)
+StatusDot.Size=UDim2.new(0,10,0,10) StatusDot.Position=UDim2.new(1,-12,1,-12)
+StatusDot.BackgroundColor3=Color3.fromRGB(0,255,140) StatusDot.BorderSizePixel=0 StatusDot.ZIndex=204
+Instance.new("UICorner",StatusDot).CornerRadius=UDim.new(0.5,0)
+local HudNameLabel=Instance.new("TextLabel",HudPanel)
+HudNameLabel.Size=UDim2.new(1,-120,0,22) HudNameLabel.Position=UDim2.new(0,112,0,50)
+HudNameLabel.BackgroundTransparency=1 HudNameLabel.Text="—" HudNameLabel.TextColor3=Color3.new(1,1,1)
+HudNameLabel.Font=Enum.Font.GothamBold HudNameLabel.TextSize=16 HudNameLabel.TextXAlignment=Enum.TextXAlignment.Left HudNameLabel.ZIndex=202
+local HudUsernameLabel=Instance.new("TextLabel",HudPanel)
+HudUsernameLabel.Size=UDim2.new(1,-120,0,16) HudUsernameLabel.Position=UDim2.new(0,112,0,74)
+HudUsernameLabel.BackgroundTransparency=1 HudUsernameLabel.Text="—" HudUsernameLabel.TextColor3=Color3.fromRGB(0,180,220)
+HudUsernameLabel.Font=Enum.Font.Gotham HudUsernameLabel.TextSize=11 HudUsernameLabel.TextXAlignment=Enum.TextXAlignment.Left HudUsernameLabel.ZIndex=202
+local HudUserIdLabel=Instance.new("TextLabel",HudPanel)
+HudUserIdLabel.Size=UDim2.new(1,-120,0,14) HudUserIdLabel.Position=UDim2.new(0,112,0,92)
+HudUserIdLabel.BackgroundTransparency=1 HudUserIdLabel.Text="ID: —" HudUserIdLabel.TextColor3=Color3.fromRGB(0,120,160)
+HudUserIdLabel.Font=Enum.Font.Gotham HudUserIdLabel.TextSize=10 HudUserIdLabel.TextXAlignment=Enum.TextXAlignment.Left HudUserIdLabel.ZIndex=202
+local VDiv=Instance.new("Frame",HudPanel)
+VDiv.Size=UDim2.new(0,1,0,60) VDiv.Position=UDim2.new(0,106,0,46)
+VDiv.BackgroundColor3=Color3.fromRGB(0,100,140) VDiv.BorderSizePixel=0 VDiv.ZIndex=202
+local function makeHudSection(t,y)
+    local l=Instance.new("TextLabel",HudPanel) l.Size=UDim2.new(1,-24,0,14) l.Position=UDim2.new(0,12,0,y)
+    l.BackgroundTransparency=1 l.Text="── "..t.." ──────────────────────"
+    l.TextColor3=Color3.fromRGB(0,140,180) l.Font=Enum.Font.GothamBold l.TextSize=9
+    l.TextXAlignment=Enum.TextXAlignment.Left l.ZIndex=202 l.ClipsDescendants=true return l
 end
-
-local InfoDisplay  = makeInfoRow("Display name", 70)
-local InfoUsername = makeInfoRow("Username",      100)
-local InfoCreated  = makeInfoRow("Created",       130)
-local InfoDesc     = makeInfoRow("Description",   160)
-
-local ViewFriendsBtn = Instance.new("TextButton", ProfileBody)
-ViewFriendsBtn.Size = UDim2.new(1,-24,0,34)
-ViewFriendsBtn.Position = UDim2.new(0,12,0,198)
-ViewFriendsBtn.BackgroundColor3 = Color3.fromRGB(50,0,100)
-ViewFriendsBtn.Text = "View Friends"
-ViewFriendsBtn.TextColor3 = Color3.new(1,1,1)
-ViewFriendsBtn.Font = Enum.Font.GothamBold
-ViewFriendsBtn.TextSize = 13
-Instance.new("UICorner", ViewFriendsBtn).CornerRadius = UDim.new(0,6)
-
-local CopyBtn = Instance.new("TextButton", ProfileBody)
-CopyBtn.Size = UDim2.new(1,-66,0,34)
-CopyBtn.Position = UDim2.new(0,12,0,240)
-
-local RinneganBtn = Instance.new("TextButton", ProfileBody)
-RinneganBtn.Size = UDim2.new(0,38,0,34)
-RinneganBtn.Position = UDim2.new(1,-50,0,240)
-RinneganBtn.BackgroundColor3 = Color3.fromRGB(60,0,120)
-RinneganBtn.Text = "👁"
-RinneganBtn.TextSize = 18
-RinneganBtn.Font = Enum.Font.GothamBold
-RinneganBtn.TextColor3 = Color3.fromRGB(180,100,255)
-RinneganBtn.BorderSizePixel = 0
-Instance.new("UICorner", RinneganBtn).CornerRadius = UDim.new(0,6)
-local RinneganStroke = Instance.new("UIStroke", RinneganBtn)
-RinneganStroke.Color = Color3.fromRGB(140,0,255) RinneganStroke.Thickness = 1.5
-
-local RinneganX = Instance.new("TextLabel", RinneganBtn)
-RinneganX.Size = UDim2.new(1,0,1,0)
-RinneganX.BackgroundTransparency = 1
-RinneganX.Text = "✕"
-RinneganX.TextColor3 = Color3.fromRGB(255,80,80)
-RinneganX.Font = Enum.Font.GothamBold
-RinneganX.TextSize = 14
-RinneganX.Visible = false
-CopyBtn.BackgroundColor3 = Color3.fromRGB(70,0,130)
-CopyBtn.Text = "Copy profile link"
-CopyBtn.TextColor3 = Color3.new(1,1,1)
-CopyBtn.Font = Enum.Font.GothamBold
-CopyBtn.TextSize = 13
-Instance.new("UICorner", CopyBtn).CornerRadius = UDim.new(0,6)
-
-
-local PROFILE_EXPANDED_H = 380
-local PROFILE_COLLAPSED_H = 100
-
-ProfileExpandBtn.MouseButton1Click:Connect(function()
-    profileExpanded = not profileExpanded
-    if profileExpanded then
-        ProfileExpandBtn.Text = "▼"
-        ProfileBody.Visible = true
-        TweenService:Create(ProfilePanel, TweenInfo.new(0.25), {Size = UDim2.new(0,280,0,PROFILE_EXPANDED_H)}):Play()
-    else
-        ProfileExpandBtn.Text = "▶"
-        TweenService:Create(ProfilePanel, TweenInfo.new(0.25), {Size = UDim2.new(0,280,0,PROFILE_COLLAPSED_H)}):Play()
-        task.delay(0.25, function()
-            if not profileExpanded then
-                ProfileBody.Visible = false
+local function makeHudRow(icon,label,y)
+    local row=Instance.new("Frame",HudPanel) row.Size=UDim2.new(1,-24,0,24) row.Position=UDim2.new(0,12,0,y)
+    row.BackgroundTransparency=1 row.BorderSizePixel=0 row.ZIndex=202
+    local dl=Instance.new("Frame",row) dl.Size=UDim2.new(1,0,0,1) dl.Position=UDim2.new(0,0,1,-1)
+    dl.BackgroundColor3=Color3.fromRGB(0,50,70) dl.BorderSizePixel=0 dl.ZIndex=202
+    local ic=Instance.new("TextLabel",row) ic.Size=UDim2.new(0,18,1,0) ic.BackgroundTransparency=1
+    ic.Text=icon ic.TextColor3=Color3.fromRGB(0,200,255) ic.Font=Enum.Font.GothamBold ic.TextSize=10 ic.ZIndex=203
+    local k=Instance.new("TextLabel",row) k.Size=UDim2.new(0.42,0,1,0) k.Position=UDim2.new(0,20,0,0)
+    k.BackgroundTransparency=1 k.Text=label k.TextColor3=Color3.fromRGB(0,150,190)
+    k.Font=Enum.Font.Gotham k.TextSize=10 k.TextXAlignment=Enum.TextXAlignment.Left k.ZIndex=203
+    local v=Instance.new("TextLabel",row) v.Size=UDim2.new(0.56,0,1,0) v.Position=UDim2.new(0.44,0,0,0)
+    v.BackgroundTransparency=1 v.Text="—" v.TextColor3=Color3.new(1,1,1) v.Font=Enum.Font.GothamBold
+    v.TextSize=10 v.TextXAlignment=Enum.TextXAlignment.Right v.TextTruncate=Enum.TextTruncate.AtEnd v.ZIndex=203
+    return v
+end
+makeHudSection("ACCOUNT INFO",144)
+local HudCreated=makeHudRow("◆","Account Created",162)
+local HudAccAge=makeHudRow("◆","Account Age",188)
+local HudPastNames=makeHudRow("◆","Past Usernames",214)
+makeHudSection("SOCIAL",246)
+local HudFriends=makeHudRow("◈","Friend Count",264)
+local HudFollowers=makeHudRow("◈","Followers",290)
+local HudFollowing=makeHudRow("◈","Following",316)
+makeHudSection("ACTIVITY",348)
+local HudLastOnline=makeHudRow("▶","Last Online",366)
+local HudJoinDate=makeHudRow("▶","Joined Roblox",392)
+makeHudSection("INVENTORY",424)
+local HudInventory=makeHudRow("⬡","Items Owned",442)
+local HudBadges=makeHudRow("⬡","Badges Earned",468)
+local HudLoading=Instance.new("TextLabel",HudPanel)
+HudLoading.Size=UDim2.new(1,0,0,20) HudLoading.Position=UDim2.new(0,0,1,-24)
+HudLoading.BackgroundTransparency=1 HudLoading.Text="[ FETCHING DATA... ]"
+HudLoading.TextColor3=Color3.fromRGB(0,120,160) HudLoading.Font=Enum.Font.GothamBold
+HudLoading.TextSize=9 HudLoading.ZIndex=203 HudLoading.Visible=false
+local hudDragging=false local hudDragStart,hudStartPos
+HudPanel.InputBegan:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.MouseButton1 then
+        hudDragging=true hudDragStart=input.Position hudStartPos=HudPanel.Position
+    end
+end)
+local function resetHud()
+    moreInfoActive=false MoreInfoBtn.Text="⬡ More Info" MoreInfoBtn.BackgroundColor3=Color3.fromRGB(0,60,80)
+end
+HudCloseBtn.MouseButton1Click:Connect(function()
+    resetHud()
+    TweenService:Create(HudPanel,TweenInfo.new(0.35,Enum.EasingStyle.Quart),{BackgroundTransparency=1,Size=UDim2.new(0,380,0,460)}):Play()
+    task.delay(0.35,function() HudPanel.Visible=false HudPanel.Size=UDim2.new(0,420,0,500) HudPanel.BackgroundTransparency=0.05 end)
+end)
+local function loadMoreInfo(userId)
+    getAvatar(userId,HudAvatar)
+    HudNameLabel.Text=ProfileDisplayName.Text~="" and ProfileDisplayName.Text or "—"
+    HudUsernameLabel.Text=ProfileUsername.Text~="" and ProfileUsername.Text or "—"
+    HudUserIdLabel.Text="ID: "..tostring(userId)
+    local ld="loading..."
+    HudCreated.Text=ld HudAccAge.Text=ld HudPastNames.Text=ld
+    HudFriends.Text=ld HudFollowers.Text=ld HudFollowing.Text=ld
+    HudLastOnline.Text=ld HudJoinDate.Text=ld HudInventory.Text=ld HudBadges.Text=ld
+    HudLoading.Visible=true
+    task.spawn(function()
+        local tp=Players:GetPlayerByUserId(userId)
+        if tp then
+            local days=tp.AccountAge
+            HudAccAge.Text=fmtAge(days)
+            local cd=os.date("*t",os.time()-days*86400)
+            HudCreated.Text=MN[cd.month].." "..cd.day..", "..cd.year
+            HudJoinDate.Text=MN[cd.month].." "..cd.year
+        end
+    end)
+    task.spawn(function()
+        local ok,pages=pcall(Players.GetFriendsAsync,Players,userId)
+        if ok and pages then
+            local cnt=#pages:GetCurrentPage()
+            while not pages.IsFinished do
+                if not pcall(function() pages:AdvanceToNextPageAsync() end) then break end
+                cnt=cnt+#pages:GetCurrentPage()
             end
+            HudFriends.Text=tostring(cnt)
+        else HudFriends.Text="N/A" end
+    end)
+    task.spawn(function()
+        local d1=jd(tryGet("https://users.roblox.com/v1/users/"..userId))
+        if d1 and d1.created then
+            local yr=tonumber(d1.created:match("^(%d+)")) or 2006
+            local mo=tonumber(d1.created:match("^%d+%-(%d+)")) or 1
+            local dy=tonumber(d1.created:match("^%d+%-%d+%-(%d+)")) or 1
+            local ok2,ts=pcall(os.time,{year=yr,month=mo,day=dy,hour=0,min=0,sec=0})
+            if ok2 and HudAccAge.Text=="loading..." then
+                HudAccAge.Text=fmtAge(math.floor((os.time()-ts)/86400))
+                HudCreated.Text=MN[mo].." "..dy..", "..yr
+                HudJoinDate.Text=MN[mo].." "..yr
+            end
+        end
+        local d2=jd(tryGet("https://users.roblox.com/v1/users/"..userId.."/username-history?limit=10&sortOrder=Desc"))
+        if d2 and d2.data then
+            if #d2.data>0 then
+                local ns={} for _,e in ipairs(d2.data) do table.insert(ns,e.name) end
+                HudPastNames.Text=table.concat(ns,", ")
+            else HudPastNames.Text="None" end
+        else HudPastNames.Text="N/A" end
+        local d3=jd(tryGet("https://friends.roblox.com/v1/users/"..userId.."/followers/count"))
+        if d3 and d3.count~=nil then
+            local n=d3.count
+            if n>=1000000 then HudFollowers.Text=("%.1fM"):format(n/1000000)
+            elseif n>=1000 then HudFollowers.Text=("%.1fK"):format(n/1000)
+            else HudFollowers.Text=tostring(n) end
+        else HudFollowers.Text="N/A" end
+        local d4=jd(tryGet("https://friends.roblox.com/v1/users/"..userId.."/followings/count"))
+        HudFollowing.Text=(d4 and d4.count~=nil) and tostring(d4.count) or "N/A"
+        local pb=HttpService:JSONEncode({userIds={userId}})
+        local d5=jd(tryPost("https://presence.roblox.com/v1/presence/users",pb))
+        if d5 and d5.userPresences and d5.userPresences[1] then
+            local p=d5.userPresences[1]
+            local pt={[0]="Offline",[1]="Website",[2]="In-Game",[3]="Studio"}
+            local s=pt[p.userPresenceType] or "Unknown"
+            if p.lastLocation and p.lastLocation~="" and p.userPresenceType==2 then s=p.lastLocation end
+            HudLastOnline.Text=s
+        else HudLastOnline.Text=Players:GetPlayerByUserId(userId) and "In server" or "N/A" end
+        local d6=jd(tryGet("https://badges.roblox.com/v1/users/"..userId.."/badges?limit=100&sortOrder=Desc"))
+        if d6 and d6.data then HudBadges.Text=d6.nextPageCursor and (#d6.data.."+") or tostring(#d6.data)
+        else HudBadges.Text="N/A" end
+        local d7=jd(tryGet("https://inventory.roblox.com/v1/users/"..userId.."/assets/collectibles?limit=100"))
+        if d7 and d7.data then HudInventory.Text=d7.nextPageCursor and (#d7.data.."+ items") or (#d7.data.." items")
+        else HudInventory.Text="Private" end
+        HudLoading.Visible=false
+    end)
+end
+MoreInfoBtn.MouseButton1Click:Connect(function()
+    moreInfoActive=not moreInfoActive
+    if moreInfoActive then
+        MoreInfoBtn.Text="⬡ Hide Info" MoreInfoBtn.BackgroundColor3=Color3.fromRGB(0,100,130)
+        if currentProfileId then loadMoreInfo(currentProfileId) end
+        HudPanel.Size=UDim2.new(0,380,0,460) HudPanel.BackgroundTransparency=1 HudPanel.Visible=true
+        TweenService:Create(HudPanel,TweenInfo.new(0.4,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{BackgroundTransparency=0.05,Size=UDim2.new(0,420,0,500)}):Play()
+    else
+        resetHud()
+        TweenService:Create(HudPanel,TweenInfo.new(0.35,Enum.EasingStyle.Quart),{BackgroundTransparency=1,Size=UDim2.new(0,380,0,460)}):Play()
+        task.delay(0.35,function()
+            if not moreInfoActive then HudPanel.Visible=false HudPanel.Size=UDim2.new(0,420,0,500) HudPanel.BackgroundTransparency=0.05 end
         end)
     end
 end)
-
-local ProfileResizeHandle = Instance.new("Frame", ProfilePanel)
-ProfileResizeHandle.Size = UDim2.new(0, 14, 0, 14)
-ProfileResizeHandle.Position = UDim2.new(1, -14, 1, -14)
-ProfileResizeHandle.BackgroundColor3 = Color3.fromRGB(120, 60, 200)
-ProfileResizeHandle.BackgroundTransparency = 0.4
-ProfileResizeHandle.BorderSizePixel = 0
-ProfileResizeHandle.ZIndex = 20
-Instance.new("UICorner", ProfileResizeHandle).CornerRadius = UDim.new(0, 3)
-local ProfileHandleLabel = Instance.new("TextLabel", ProfileResizeHandle)
-ProfileHandleLabel.Size = UDim2.new(1, 0, 1, 0)
-ProfileHandleLabel.BackgroundTransparency = 1
-ProfileHandleLabel.Text = "⊿"
-ProfileHandleLabel.TextColor3 = Color3.fromRGB(200, 160, 255)
-ProfileHandleLabel.Font = Enum.Font.GothamBold
-ProfileHandleLabel.TextSize = 10
-ProfileHandleLabel.ZIndex = 21
-
-local profileDragging = false
-local profileResizing = false
-local profileDragStart, profileStartPos
-local profileResizeStart, profileStartSize
-local profileMinSize = Vector2.new(200, 150)
-
-ProfilePanel.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local mousePos = input.Position
-        local framePos = ProfilePanel.AbsolutePosition
-        local frameSize = ProfilePanel.AbsoluteSize
-        if mousePos.X > framePos.X + frameSize.X - 18 and
-           mousePos.Y > framePos.Y + frameSize.Y - 18 then
-            profileResizing = true
-            profileResizeStart = mousePos
-            profileStartSize = frameSize
-        else
-            profileDragging = true
-            profileDragStart = mousePos
-            profileStartPos = ProfilePanel.Position
+task.spawn(function()
+    while true do
+        if HudPanel.Visible then
+            HudStroke.Transparency=0.1+((math.sin(tick()*2)+1)/2)*0.3
         end
+        task.wait(0.05)
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        profileDragging = false
-        profileResizing = false
-    end
-end)
-
-
-
-
-local FriendsPanel = Instance.new("Frame", HighkeyHub)
-FriendsPanel.Name = "FriendsPanel"
-FriendsPanel.Size = UDim2.new(0,260,0,400)
-FriendsPanel.Position = UDim2.new(0.05,600,0.15,0)
-FriendsPanel.BackgroundColor3 = Color3.fromRGB(13,13,13)
-FriendsPanel.BackgroundTransparency = 0.05
-FriendsPanel.BorderSizePixel = 0
-FriendsPanel.Visible = false
-Instance.new("UICorner", FriendsPanel).CornerRadius = UDim.new(0,10)
-
-local FriendsStroke = Instance.new("UIStroke", FriendsPanel)
-FriendsStroke.Color = config.lavender
-FriendsStroke.Thickness = 1.5
-FriendsStroke.Transparency = 0.5
-
-local FriendsHeader = Instance.new("Frame", FriendsPanel)
-FriendsHeader.Size = UDim2.new(1,0,0,44)
-FriendsHeader.BackgroundColor3 = Color3.fromRGB(10,10,10)
-FriendsHeader.BorderSizePixel = 0
-Instance.new("UICorner", FriendsHeader).CornerRadius = UDim.new(0,10)
-
-local FriendsTitle = Instance.new("TextLabel", FriendsHeader)
-FriendsTitle.Size = UDim2.new(1,-50,1,0)
-FriendsTitle.Position = UDim2.new(0,12,0,0)
-FriendsTitle.BackgroundTransparency = 1
-FriendsTitle.Text = "Friends"
-FriendsTitle.TextColor3 = Color3.fromRGB(200,160,255)
-FriendsTitle.Font = Enum.Font.GothamBold
-FriendsTitle.TextSize = 14
-FriendsTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local CloseFriendsBtn = Instance.new("TextButton", FriendsHeader)
-CloseFriendsBtn.Size = UDim2.new(0,28,0,28)
-CloseFriendsBtn.Position = UDim2.new(1,-36,0.5,-14)
-CloseFriendsBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-CloseFriendsBtn.Text = "✕"
-CloseFriendsBtn.TextColor3 = Color3.fromRGB(180,180,180)
-CloseFriendsBtn.Font = Enum.Font.GothamBold
-CloseFriendsBtn.TextSize = 12
-Instance.new("UICorner", CloseFriendsBtn).CornerRadius = UDim.new(0,6)
-
-local FriendsScroll = Instance.new("ScrollingFrame", FriendsPanel)
-FriendsScroll.Size = UDim2.new(1,-16,1,-52)
-FriendsScroll.Position = UDim2.new(0,8,0,50)
-FriendsScroll.BackgroundTransparency = 1
-FriendsScroll.BorderSizePixel = 0
-FriendsScroll.ScrollBarThickness = 3
-FriendsScroll.ScrollBarImageColor3 = Color3.fromRGB(130,0,200)
-FriendsScroll.CanvasSize = UDim2.new(0,0,0,0)
-
-local FriendsLayout = Instance.new("UIListLayout", FriendsScroll)
-FriendsLayout.Padding = UDim.new(0,4)
-FriendsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local FriendsPad = Instance.new("UIPadding", FriendsScroll)
-FriendsPad.PaddingTop = UDim.new(0,4)
-FriendsPad.PaddingBottom = UDim.new(0,4)
-
-local FriendsLoadingLabel = Instance.new("TextLabel", FriendsScroll)
-FriendsLoadingLabel.Size = UDim2.new(1,0,0,30)
-FriendsLoadingLabel.BackgroundTransparency = 1
-FriendsLoadingLabel.Text = "Loading friends..."
-FriendsLoadingLabel.TextColor3 = Color3.fromRGB(120,120,120)
-FriendsLoadingLabel.Font = Enum.Font.Gotham
-FriendsLoadingLabel.TextSize = 12
-FriendsLoadingLabel.LayoutOrder = 0
-
-CloseFriendsBtn.MouseButton1Click:Connect(function()
-    FriendsPanel.Visible = false
-end)
-
-local friendsDragging = false
-local friendsDragStart, friendsStartPos
-
+local FriendsPanel=Instance.new("Frame",HighkeyHub)
+FriendsPanel.Name="FriendsPanel" FriendsPanel.Size=UDim2.new(0,260,0,400)
+FriendsPanel.Position=UDim2.new(0.05,600,0.15,0) FriendsPanel.BackgroundColor3=Color3.fromRGB(13,13,13)
+FriendsPanel.BackgroundTransparency=0.05 FriendsPanel.BorderSizePixel=0 FriendsPanel.Visible=false
+Instance.new("UICorner",FriendsPanel).CornerRadius=UDim.new(0,10)
+local FriendsStroke=Instance.new("UIStroke",FriendsPanel)
+FriendsStroke.Color=config.lavender FriendsStroke.Thickness=1.5 FriendsStroke.Transparency=0.5
+local FriendsHeader=Instance.new("Frame",FriendsPanel)
+FriendsHeader.Size=UDim2.new(1,0,0,44) FriendsHeader.BackgroundColor3=Color3.fromRGB(10,10,10) FriendsHeader.BorderSizePixel=0
+Instance.new("UICorner",FriendsHeader).CornerRadius=UDim.new(0,10)
+local FriendsTitle=Instance.new("TextLabel",FriendsHeader)
+FriendsTitle.Size=UDim2.new(1,-50,1,0) FriendsTitle.Position=UDim2.new(0,12,0,0)
+FriendsTitle.BackgroundTransparency=1 FriendsTitle.Text="Friends"
+FriendsTitle.TextColor3=Color3.fromRGB(200,160,255) FriendsTitle.Font=Enum.Font.GothamBold
+FriendsTitle.TextSize=14 FriendsTitle.TextXAlignment=Enum.TextXAlignment.Left
+local CloseFriendsBtn=Instance.new("TextButton",FriendsHeader)
+CloseFriendsBtn.Size=UDim2.new(0,28,0,28) CloseFriendsBtn.Position=UDim2.new(1,-36,0.5,-14)
+CloseFriendsBtn.BackgroundColor3=Color3.fromRGB(40,40,40) CloseFriendsBtn.Text="✕"
+CloseFriendsBtn.TextColor3=Color3.fromRGB(180,180,180) CloseFriendsBtn.Font=Enum.Font.GothamBold CloseFriendsBtn.TextSize=12
+Instance.new("UICorner",CloseFriendsBtn).CornerRadius=UDim.new(0,6)
+local FriendsScroll=Instance.new("ScrollingFrame",FriendsPanel)
+FriendsScroll.Size=UDim2.new(1,-16,1,-52) FriendsScroll.Position=UDim2.new(0,8,0,50)
+FriendsScroll.BackgroundTransparency=1 FriendsScroll.BorderSizePixel=0
+FriendsScroll.ScrollBarThickness=3 FriendsScroll.ScrollBarImageColor3=Color3.fromRGB(130,0,200)
+FriendsScroll.CanvasSize=UDim2.new(0,0,0,0)
+local FriendsLayout=Instance.new("UIListLayout",FriendsScroll)
+FriendsLayout.Padding=UDim.new(0,4) FriendsLayout.SortOrder=Enum.SortOrder.LayoutOrder
+local FriendsPad=Instance.new("UIPadding",FriendsScroll)
+FriendsPad.PaddingTop=UDim.new(0,4) FriendsPad.PaddingBottom=UDim.new(0,4)
+local FriendsLoadingLabel=Instance.new("TextLabel",FriendsScroll)
+FriendsLoadingLabel.Size=UDim2.new(1,0,0,30) FriendsLoadingLabel.BackgroundTransparency=1
+FriendsLoadingLabel.Text="Loading friends..." FriendsLoadingLabel.TextColor3=Color3.fromRGB(120,120,120)
+FriendsLoadingLabel.Font=Enum.Font.Gotham FriendsLoadingLabel.TextSize=12 FriendsLoadingLabel.LayoutOrder=0
+CloseFriendsBtn.MouseButton1Click:Connect(function() FriendsPanel.Visible=false end)
+local friendsDragging=false local friendsDragStart,friendsStartPos
 FriendsPanel.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        friendsDragging = true
-        friendsDragStart = input.Position
-        friendsStartPos = FriendsPanel.Position
+    if input.UserInputType==Enum.UserInputType.MouseButton1 then
+        friendsDragging=true friendsDragStart=input.Position friendsStartPos=FriendsPanel.Position
     end
 end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        friendsDragging = false
-    end
+ProfileCloseBtn.MouseButton1Click:Connect(function()
+    ProfilePanel.Visible=false FriendsPanel.Visible=false
 end)
-
-local currentProfileId = nil
 
 local showProfile
-
 local function loadFriends(userId)
-    for _, c in ipairs(FriendsScroll:GetChildren()) do
+    for _,c in ipairs(FriendsScroll:GetChildren()) do
         if c:IsA("Frame") or c:IsA("TextButton") then c:Destroy() end
     end
-    FriendsLoadingLabel.Text = "Loading friends..."
-    FriendsLoadingLabel.Visible = true
-    FriendsPanel.Visible = true
-
+    FriendsLoadingLabel.Text="Loading friends..." FriendsLoadingLabel.Visible=true FriendsPanel.Visible=true
     task.spawn(function()
-        local ok, pages = pcall(function()
-            return Players:GetFriendsAsync(userId)
-        end)
-        if not ok then
-            FriendsLoadingLabel.Text = "Failed to load friends."
-            return
-        end
-        FriendsLoadingLabel.Visible = false
-        local order = 1
+        local ok,pages=pcall(function() return Players:GetFriendsAsync(userId) end)
+        if not ok then FriendsLoadingLabel.Text="Failed to load friends." return end
+        FriendsLoadingLabel.Visible=false
+        local order=1
         local function processPage(page)
-            for _, friendData in ipairs(page) do
-                local row = Instance.new("TextButton", FriendsScroll)
-                row.Size = UDim2.new(1,0,0,46)
-                row.BackgroundColor3 = Color3.fromRGB(22,22,22)
-                row.BorderSizePixel = 0
-                row.LayoutOrder = order
-                row.Text = ""
-                row.AutoButtonColor = false
-                order = order + 1
-                Instance.new("UICorner", row).CornerRadius = UDim.new(0,6)
-
-                local av = Instance.new("ImageLabel", row)
-                av.Size = UDim2.new(0,34,0,34)
-                av.Position = UDim2.new(0,8,0.5,-17)
-                av.BackgroundColor3 = Color3.fromRGB(35,35,35)
-                av.Image = ""
-                Instance.new("UICorner", av).CornerRadius = UDim.new(0,5)
-                getAvatar(friendData.Id, av)
-
-                local dname = Instance.new("TextLabel", row)
-                dname.Size = UDim2.new(1,-56,0,18)
-                dname.Position = UDim2.new(0,50,0,8)
-                dname.BackgroundTransparency = 1
-                dname.Text = friendData.DisplayName
-                dname.TextColor3 = Color3.new(1,1,1)
-                dname.Font = Enum.Font.GothamBold
-                dname.TextSize = 12
-                dname.TextXAlignment = Enum.TextXAlignment.Left
-                dname.TextTruncate = Enum.TextTruncate.AtEnd
-
-                local uname = Instance.new("TextLabel", row)
-                uname.Size = UDim2.new(1,-56,0,14)
-                uname.Position = UDim2.new(0,50,0,26)
-                uname.BackgroundTransparency = 1
-                uname.Text = "@" .. friendData.Username
-                uname.TextColor3 = Color3.fromRGB(110,110,110)
-                uname.Font = Enum.Font.Gotham
-                uname.TextSize = 10
-                uname.TextXAlignment = Enum.TextXAlignment.Left
-
-                local capturedId = friendData.Id
-                local capturedDisplayName = friendData.DisplayName
-                local capturedUsername = friendData.Username
-
-                row.MouseEnter:Connect(function()
-                    row.BackgroundColor3 = Color3.fromRGB(40,10,60)
-                end)
-                row.MouseLeave:Connect(function()
-                    row.BackgroundColor3 = Color3.fromRGB(22,22,22)
-                end)
-
+            for _,fd in ipairs(page) do
+                local row=Instance.new("TextButton",FriendsScroll)
+                row.Size=UDim2.new(1,0,0,46) row.BackgroundColor3=Color3.fromRGB(22,22,22)
+                row.BorderSizePixel=0 row.LayoutOrder=order row.Text="" row.AutoButtonColor=false
+                order=order+1
+                Instance.new("UICorner",row).CornerRadius=UDim.new(0,6)
+                local av=Instance.new("ImageLabel",row)
+                av.Size=UDim2.new(0,34,0,34) av.Position=UDim2.new(0,8,0.5,-17)
+                av.BackgroundColor3=Color3.fromRGB(35,35,35) av.Image=""
+                Instance.new("UICorner",av).CornerRadius=UDim.new(0,5)
+                getAvatar(fd.Id,av)
+                local dn=Instance.new("TextLabel",row)
+                dn.Size=UDim2.new(1,-56,0,18) dn.Position=UDim2.new(0,50,0,8)
+                dn.BackgroundTransparency=1 dn.Text=fd.DisplayName dn.TextColor3=Color3.new(1,1,1)
+                dn.Font=Enum.Font.GothamBold dn.TextSize=12 dn.TextXAlignment=Enum.TextXAlignment.Left dn.TextTruncate=Enum.TextTruncate.AtEnd
+                local un=Instance.new("TextLabel",row)
+                un.Size=UDim2.new(1,-56,0,14) un.Position=UDim2.new(0,50,0,26)
+                un.BackgroundTransparency=1 un.Text="@"..fd.Username un.TextColor3=Color3.fromRGB(110,110,110)
+                un.Font=Enum.Font.Gotham un.TextSize=10 un.TextXAlignment=Enum.TextXAlignment.Left
+                local cId,cDN,cUN=fd.Id,fd.DisplayName,fd.Username
+                row.MouseEnter:Connect(function() row.BackgroundColor3=Color3.fromRGB(40,10,60) end)
+                row.MouseLeave:Connect(function() row.BackgroundColor3=Color3.fromRGB(22,22,22) end)
                 row.MouseButton1Click:Connect(function()
-                    local fakeTarget = {
-                        UserId = capturedId,
-                        DisplayName = capturedDisplayName,
-                        Name = capturedUsername,
-                        AccountAge = 0, -- will be fetched via HTTP below
-                    }
-                    currentProfileId = capturedId
-                    getAvatar(capturedId, ProfileAvatar)
-                    ProfileDisplayName.Text = capturedDisplayName
-                    ProfileUsername.Text = "@" .. capturedUsername
-                    InfoDisplay.Text = capturedDisplayName
-                    InfoUsername.Text = "@" .. capturedUsername
-                    StatID.Text = tostring(capturedId)
-                    YouBadge.Visible = false
-
-                    StatFriends.Text = "..."
-                    StatAge.Text = "..."
-                    InfoCreated.Text = "..."
-                    InfoDesc.Text = "..."
-
+                    currentProfileId=cId
+                    getAvatar(cId,ProfileAvatar)
+                    ProfileDisplayName.Text=cDN ProfileUsername.Text="@"..cUN
+                    InfoDisplay.Text=cDN InfoUsername.Text="@"..cUN StatID.Text=tostring(cId)
+                    YouBadge.Visible=false LegendBadge.Visible=legendUsernames[cUN]==true
+                    StatFriends.Text="..." StatAge.Text="..." InfoCreated.Text="..." InfoDesc.Text="..."
+                    if moreInfoActive then resetHud() HudPanel.Visible=false end
                     task.spawn(function()
-                        local fok, fresult = pcall(function()
-                            local fpages = Players:GetFriendsAsync(capturedId)
-                            local count = 0
-                            for _ in ipairs(fpages:GetCurrentPage()) do count = count + 1 end
-                            while not fpages.IsFinished do
-                                local adv = pcall(function() fpages:AdvanceToNextPageAsync() end)
-                                if not adv then break end
-                                for _ in ipairs(fpages:GetCurrentPage()) do count = count + 1 end
+                        local fok,fr=pcall(function()
+                            local fp2=Players:GetFriendsAsync(cId) local cnt=0
+                            for _ in ipairs(fp2:GetCurrentPage()) do cnt=cnt+1 end
+                            while not fp2.IsFinished do
+                                if not pcall(function() fp2:AdvanceToNextPageAsync() end) then break end
+                                for _ in ipairs(fp2:GetCurrentPage()) do cnt=cnt+1 end
                             end
-                            return count
+                            return cnt
                         end)
-                        StatFriends.Text = fok and tostring(fresult) or "?"
-
-                        local descOk, descResult = pcall(function()
-                            return game:HttpGet("https://users.roblox.com/v1/users/" .. capturedId)
-                        end)
-                        if descOk and descResult then
-                            local jsonOk, parsed = pcall(function()
-                                return game:GetService("HttpService"):JSONDecode(descResult)
-                            end)
-                            if jsonOk and parsed then
-                                if parsed.description and parsed.description ~= "" then
-                                    InfoDesc.Text = parsed.description
-                                else
-                                    InfoDesc.Text = "No description"
-                                end
-                                if parsed.created then
-                                    local yr = string.match(parsed.created, "^(%d+)")
-                                    local mo = string.match(parsed.created, "^%d+%-(%d+)")
-                                    local months = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}
-                                    local moNum = tonumber(mo) or 1
-                                    InfoCreated.Text = months[moNum] .. " " .. (yr or "?")
-                                end
+                        StatFriends.Text=fok and tostring(fr) or "?"
+                        local d=jd(tryGet("https://users.roblox.com/v1/users/"..cId))
+                        if d then
+                            InfoDesc.Text=(d.description and d.description~="") and d.description or "No description"
+                            if d.created then
+                                local mo=tonumber(d.created:match("^%d+%-(%d+)")) or 1
+                                InfoCreated.Text=MN[mo].." "..(d.created:match("^(%d+)") or "?")
                             end
-                        else
-                            InfoDesc.Text = "No description"
-                        end
-                        local ageOk, ageResult = pcall(function()
-                            return Players:GetPlayerByUserId(capturedId)
-                        end)
-                        if ageOk and ageResult then
-                            local ageDays = ageResult.AccountAge
-                            local ageText
-                            if ageDays >= 365 then ageText = math.floor(ageDays/365).."yr"
-                            elseif ageDays >= 30 then ageText = math.floor(ageDays/30).."mo"
-                            else ageText = ageDays.."d" end
-                            StatAge.Text = ageText
-                        else
-                            StatAge.Text = "?"
-                        end
+                        else InfoDesc.Text="No description" end
+                        local tp=Players:GetPlayerByUserId(cId)
+                        if tp then local ad=tp.AccountAge
+                            StatAge.Text=ad>=365 and math.floor(ad/365).."yr" or ad>=30 and math.floor(ad/30).."mo" or ad.."d"
+                        else StatAge.Text="?" end
                     end)
-
-                    profileExpanded = true
-                    ProfileExpandBtn.Text = "▼"
-                    ProfileBody.Visible = true
-                    ProfilePanel.Size = UDim2.new(0,280,0,PROFILE_EXPANDED_H)
-                    ProfilePanel.Visible = true
+                    profileExpanded=true ProfileExpandBtn.Text="▼" ProfileBody.Visible=true
+                    ProfilePanel.Size=UDim2.new(0,280,0,PROFILE_EXPANDED_H) ProfilePanel.Visible=true
                 end)
-
-                FriendsScroll.CanvasSize = UDim2.new(0,0,0,FriendsLayout.AbsoluteContentSize.Y + 8)
+                FriendsScroll.CanvasSize=UDim2.new(0,0,0,FriendsLayout.AbsoluteContentSize.Y+8)
             end
         end
         processPage(pages:GetCurrentPage())
-
         while not pages.IsFinished do
-            local pageOk, _ = pcall(function()
-                pages:AdvanceToNextPageAsync()
-            end)
-            if not pageOk then break end
+            if not pcall(function() pages:AdvanceToNextPageAsync() end) then break end
             processPage(pages:GetCurrentPage())
         end
-        if order == 1 then
-            FriendsLoadingLabel.Text = "No friends found."
-            FriendsLoadingLabel.Visible = true
-        end
+        if order==1 then FriendsLoadingLabel.Text="No friends found." FriendsLoadingLabel.Visible=true end
     end)
 end
-
 ViewFriendsBtn.MouseButton1Click:Connect(function()
-    if currentProfileId then
-        FriendsTitle.Text = ProfileDisplayName.Text .. "'s Friends"
-        loadFriends(currentProfileId)
-    end
+    if currentProfileId then FriendsTitle.Text=ProfileDisplayName.Text.."'s Friends" loadFriends(currentProfileId) end
 end)
-
-
-
-
-showProfile = function(targetPlayer)
+showProfile=function(targetPlayer)
     task.spawn(function()
-        local userId = targetPlayer.UserId
-        currentProfileId = userId
-        getAvatar(userId, ProfileAvatar)
-        ProfileDisplayName.Text = targetPlayer.DisplayName
-        ProfileUsername.Text = "@" .. targetPlayer.Name
-        InfoDisplay.Text = targetPlayer.DisplayName
-        InfoUsername.Text = "@" .. targetPlayer.Name
-        StatID.Text = tostring(userId)
-        YouBadge.Visible = (targetPlayer == player)
-
-
-        local ok, result = pcall(function()
-            local pages = Players:GetFriendsAsync(userId)
-            local count = 0
-            for _ in ipairs(pages:GetCurrentPage()) do count = count + 1 end
+        local userId=targetPlayer.UserId
+        currentProfileId=userId
+        getAvatar(userId,ProfileAvatar)
+        ProfileDisplayName.Text=targetPlayer.DisplayName ProfileUsername.Text="@"..targetPlayer.Name
+        InfoDisplay.Text=targetPlayer.DisplayName InfoUsername.Text="@"..targetPlayer.Name
+        StatID.Text=tostring(userId)
+        YouBadge.Visible=(targetPlayer==player)
+        LegendBadge.Visible=legendUsernames[targetPlayer.Name]==true
+        if moreInfoActive then resetHud() HudPanel.Visible=false end
+        local ok,result=pcall(function()
+            local pages=Players:GetFriendsAsync(userId) local cnt=0
+            for _ in ipairs(pages:GetCurrentPage()) do cnt=cnt+1 end
             while not pages.IsFinished do
-                local adv = pcall(function() pages:AdvanceToNextPageAsync() end)
-                if not adv then break end
-                for _ in ipairs(pages:GetCurrentPage()) do count = count + 1 end
+                if not pcall(function() pages:AdvanceToNextPageAsync() end) then break end
+                for _ in ipairs(pages:GetCurrentPage()) do cnt=cnt+1 end
             end
-            return count
+            return cnt
         end)
-        StatFriends.Text = ok and tostring(result) or "?"
-
-        local ageDays = targetPlayer.AccountAge
-        local ageText
-        if ageDays >= 365 then ageText = math.floor(ageDays/365).."yr"
-        elseif ageDays >= 30 then ageText = math.floor(ageDays/30).."mo"
-        else ageText = ageDays.."d" end
-        StatAge.Text = ageText
-
-        local createdTimestamp = os.time() - (ageDays * 86400)
-        local cd = os.date("*t", createdTimestamp)
-        local months = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}
-        InfoCreated.Text = months[cd.month].." "..cd.year
-
-        local descOk, descResult = pcall(function()
-            return game:HttpGet("https://users.roblox.com/v1/users/" .. userId)
-        end)
-        if descOk and descResult then
-            local jsonOk, parsed = pcall(function()
-                return game:GetService("HttpService"):JSONDecode(descResult)
-            end)
-            if jsonOk and parsed and parsed.description and parsed.description ~= "" then
-                InfoDesc.Text = parsed.description
-            else
-                InfoDesc.Text = "No description"
-            end
-        else
-            InfoDesc.Text = "No description"
-        end
-
-
-        profileExpanded = true
-        ProfileExpandBtn.Text = "▼"
-        ProfileBody.Visible = true
-        ProfilePanel.Size = UDim2.new(0,280,0,PROFILE_EXPANDED_H)
-
-        ProfilePanel.Visible = true
-        FriendsPanel.Visible = false
+        StatFriends.Text=ok and tostring(result) or "?"
+        local ad=targetPlayer.AccountAge
+        StatAge.Text=ad>=365 and math.floor(ad/365).."yr" or ad>=30 and math.floor(ad/30).."mo" or ad.."d"
+        local cd=os.date("*t",os.time()-(ad*86400))
+        InfoCreated.Text=MN[cd.month].." "..cd.year
+        local d=jd(tryGet("https://users.roblox.com/v1/users/"..userId))
+        InfoDesc.Text=(d and d.description and d.description~="") and d.description or "No description"
+        profileExpanded=true ProfileExpandBtn.Text="▼" ProfileBody.Visible=true
+        ProfilePanel.Size=UDim2.new(0,280,0,PROFILE_EXPANDED_H)
+        ProfilePanel.Visible=true FriendsPanel.Visible=false
     end)
 end
 
-local playerRows = {}
-
-
-
-
+local playerRows={}
 local function buildPlayerRow(targetPlayer)
-    local row = Instance.new("TextButton", PlayerScroll)
-    row.Name = targetPlayer.Name
-    row.Size = UDim2.new(1,-8,0,36)
-    row.BackgroundColor3 = Color3.fromRGB(25,25,25)
-    row.Text = ""
-    row.BorderSizePixel = 0
-    row.AutoButtonColor = false
-    Instance.new("UICorner", row).CornerRadius = UDim.new(0,5)
-
-    local avatar = Instance.new("ImageLabel", row)
-    avatar.Size = UDim2.new(0,26,0,26)
-    avatar.Position = UDim2.new(0,5,0.5,-13)
-    avatar.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    avatar.Image = ""
-    Instance.new("UICorner", avatar).CornerRadius = UDim.new(0,4)
-    getAvatar(targetPlayer.UserId, avatar)
-
-    local nameLabel = Instance.new("TextLabel", row)
-    nameLabel.Size = UDim2.new(1,-70,0,16)
-    nameLabel.Position = UDim2.new(0,36,0,4)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = targetPlayer.DisplayName
-    nameLabel.TextColor3 = Color3.new(1,1,1)
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextSize = 12
-    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-    nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-
-    local subLabel = Instance.new("TextLabel", row)
-    subLabel.Size = UDim2.new(1,-70,0,13)
-    subLabel.Position = UDim2.new(0,36,0,20)
-    subLabel.BackgroundTransparency = 1
-    subLabel.Text = "@" .. targetPlayer.Name
-    subLabel.TextColor3 = Color3.fromRGB(100,100,100)
-    subLabel.Font = Enum.Font.Gotham
-    subLabel.TextSize = 10
-    subLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-    if targetPlayer == player then
-
-        local badge = Instance.new("TextLabel", row)
-        badge.Size = UDim2.new(0,30,0,14)
-        badge.Position = UDim2.new(1,-34,0.5,-7)
-        badge.BackgroundColor3 = Color3.fromRGB(80,0,140)
-        badge.Text = "you"
-        badge.TextColor3 = Color3.fromRGB(200,130,255)
-        badge.Font = Enum.Font.GothamBold
-        badge.TextSize = 9
-        Instance.new("UICorner", badge).CornerRadius = UDim.new(0,3)
+    local row=Instance.new("TextButton",PlayerScroll)
+    row.Name=targetPlayer.Name row.Size=UDim2.new(1,-8,0,36)
+    row.BackgroundColor3=Color3.fromRGB(25,25,25) row.Text=""
+    row.BorderSizePixel=0 row.AutoButtonColor=false
+    Instance.new("UICorner",row).CornerRadius=UDim.new(0,5)
+    local av=Instance.new("ImageLabel",row)
+    av.Size=UDim2.new(0,26,0,26) av.Position=UDim2.new(0,5,0.5,-13)
+    av.BackgroundColor3=Color3.fromRGB(40,40,40) av.Image=""
+    Instance.new("UICorner",av).CornerRadius=UDim.new(0,4)
+    getAvatar(targetPlayer.UserId,av)
+    local nl=Instance.new("TextLabel",row)
+    nl.Size=UDim2.new(1,-70,0,16) nl.Position=UDim2.new(0,36,0,4)
+    nl.BackgroundTransparency=1 nl.Text=targetPlayer.DisplayName nl.TextColor3=Color3.new(1,1,1)
+    nl.Font=Enum.Font.GothamBold nl.TextSize=12 nl.TextXAlignment=Enum.TextXAlignment.Left nl.TextTruncate=Enum.TextTruncate.AtEnd
+    local sl=Instance.new("TextLabel",row)
+    sl.Size=UDim2.new(1,-70,0,13) sl.Position=UDim2.new(0,36,0,20)
+    sl.BackgroundTransparency=1 sl.Text="@"..targetPlayer.Name sl.TextColor3=Color3.fromRGB(100,100,100)
+    sl.Font=Enum.Font.Gotham sl.TextSize=10 sl.TextXAlignment=Enum.TextXAlignment.Left
+    if legendUsernames[targetPlayer.Name] then
+        local b=Instance.new("TextLabel",row)
+        b.Size=UDim2.new(0,56,0,16) b.Position=UDim2.new(1,-60,0.5,-8)
+        b.BackgroundColor3=Color3.fromRGB(120,85,0) b.Text="⚜ Legend"
+        b.TextColor3=Color3.fromRGB(255,215,0) b.Font=Enum.Font.GothamBold b.TextSize=9 b.ZIndex=5
+        Instance.new("UICorner",b).CornerRadius=UDim.new(0,3)
+        local ls=Instance.new("UIStroke",b) ls.Color=Color3.fromRGB(255,200,0) ls.Thickness=1 ls.Transparency=0.4
+    elseif targetPlayer==player then
+        local lb=Instance.new("TextLabel",row)
+        lb.Size=UDim2.new(0,46,0,14) lb.Position=UDim2.new(1,-84,0.5,-7)
+        lb.BackgroundColor3=Color3.fromRGB(120,80,0) lb.Text="⚔ Legend"
+        lb.TextColor3=Color3.fromRGB(255,200,80) lb.Font=Enum.Font.GothamBold lb.TextSize=9
+        Instance.new("UICorner",lb).CornerRadius=UDim.new(0,3)
+        local b=Instance.new("TextLabel",row)
+        b.Size=UDim2.new(0,30,0,14) b.Position=UDim2.new(1,-34,0.5,-7)
+        b.BackgroundColor3=Color3.fromRGB(80,0,140) b.Text="you"
+        b.TextColor3=Color3.fromRGB(200,130,255) b.Font=Enum.Font.GothamBold b.TextSize=9
+        Instance.new("UICorner",b).CornerRadius=UDim.new(0,3)
     elseif myFriendIds[targetPlayer.UserId] then
-
-        local badge = Instance.new("TextLabel", row)
-        badge.Size = UDim2.new(0,50,0,14)
-        badge.Position = UDim2.new(1,-54,0.5,-7)
-        badge.BackgroundColor3 = Color3.fromRGB(0,100,30)
-        badge.Text = "HighBro"
-        badge.TextColor3 = Color3.fromRGB(100,255,140)
-        badge.Font = Enum.Font.GothamBold
-        badge.TextSize = 9
-        Instance.new("UICorner", badge).CornerRadius = UDim.new(0,3)
+        local b=Instance.new("TextLabel",row)
+        b.Size=UDim2.new(0,50,0,14) b.Position=UDim2.new(1,-54,0.5,-7)
+        b.BackgroundColor3=Color3.fromRGB(0,100,30) b.Text="HighBro"
+        b.TextColor3=Color3.fromRGB(100,255,140) b.Font=Enum.Font.GothamBold b.TextSize=9
+        Instance.new("UICorner",b).CornerRadius=UDim.new(0,3)
     end
-
     row.MouseButton1Click:Connect(function()
-        for _, r in pairs(playerRows) do
-            r.BackgroundColor3 = Color3.fromRGB(25,25,25)
-        end
-        row.BackgroundColor3 = Color3.fromRGB(55,0,100)
+        for _,r in pairs(playerRows) do r.BackgroundColor3=Color3.fromRGB(25,25,25) end
+        row.BackgroundColor3=Color3.fromRGB(55,0,100)
         showProfile(targetPlayer)
     end)
     row.MouseEnter:Connect(function()
-        if row.BackgroundColor3 ~= Color3.fromRGB(55,0,100) then
-            row.BackgroundColor3 = Color3.fromRGB(35,35,35)
-        end
+        if row.BackgroundColor3~=Color3.fromRGB(55,0,100) then row.BackgroundColor3=Color3.fromRGB(35,35,35) end
     end)
     row.MouseLeave:Connect(function()
-        if row.BackgroundColor3 ~= Color3.fromRGB(55,0,100) then
-            row.BackgroundColor3 = Color3.fromRGB(25,25,25)
-        end
+        if row.BackgroundColor3~=Color3.fromRGB(55,0,100) then row.BackgroundColor3=Color3.fromRGB(25,25,25) end
     end)
-
-    playerRows[targetPlayer.Name] = row
-    PlayerScroll.CanvasSize = UDim2.new(0,0,0,PlayerListLayout.AbsoluteContentSize.Y + 8)
+    playerRows[targetPlayer.Name]=row
+    PlayerScroll.CanvasSize=UDim2.new(0,0,0,PlayerListLayout.AbsoluteContentSize.Y+8)
 end
-
-
 task.spawn(function()
     task.wait(3)
-    for name, row in pairs(playerRows) do
-        row:Destroy()
-        playerRows[name] = nil
-    end
-    for _, p in ipairs(Players:GetPlayers()) do
-        buildPlayerRow(p)
-    end
+    for name,row in pairs(playerRows) do row:Destroy() playerRows[name]=nil end
+    for _,p in ipairs(Players:GetPlayers()) do buildPlayerRow(p) end
 end)
-
 local function removePlayerRow(targetPlayer)
-    local row = playerRows[targetPlayer.Name]
-    if row then
-        row:Destroy()
-        playerRows[targetPlayer.Name] = nil
-        PlayerScroll.CanvasSize = UDim2.new(0,0,0,PlayerListLayout.AbsoluteContentSize.Y + 8)
-    end
+    local row=playerRows[targetPlayer.Name]
+    if row then row:Destroy() playerRows[targetPlayer.Name]=nil
+        PlayerScroll.CanvasSize=UDim2.new(0,0,0,PlayerListLayout.AbsoluteContentSize.Y+8) end
 end
-
-for _, p in ipairs(Players:GetPlayers()) do buildPlayerRow(p) end
+for _,p in ipairs(Players:GetPlayers()) do buildPlayerRow(p) end
 Players.PlayerAdded:Connect(buildPlayerRow)
 Players.PlayerRemoving:Connect(removePlayerRow)
-
 PlayerListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    PlayerScroll.CanvasSize = UDim2.new(0,0,0,PlayerListLayout.AbsoluteContentSize.Y + 8)
+    PlayerScroll.CanvasSize=UDim2.new(0,0,0,PlayerListLayout.AbsoluteContentSize.Y+8)
 end)
-
 CopyBtn.MouseButton1Click:Connect(function()
     if currentProfileId then
-        pcall(function()
-            setclipboard("https://www.roblox.com/users/" .. currentProfileId .. "/profile")
-        end)
-        CopyBtn.Text = "Copied!"
-        task.delay(2, function() CopyBtn.Text = "Copy profile link" end)
+        pcall(function() setclipboard("https://www.roblox.com/users/"..currentProfileId.."/profile") end)
+        CopyBtn.Text="Copied!" task.delay(2,function() CopyBtn.Text="Copy profile link" end)
     end
 end)
 
-local COLLAPSED_H = 40
-local EXPANDED_H  = 402
-local playersExpanded = true
-
-local function setHeight(h)
-    TweenService:Create(MainFrame, TweenInfo.new(0.25), {Size = UDim2.new(0,300,0,h)}):Play()
-end
-
+local COLLAPSED_H=40 local EXPANDED_H=402 local playersExpanded=true
+local function setHeight(h) TweenService:Create(MainFrame,TweenInfo.new(0.25),{Size=UDim2.new(0,300,0,h)}):Play() end
 setHeight(EXPANDED_H)
-
 ClosePlayersBtn.MouseButton1Click:Connect(function()
-    playersExpanded = not playersExpanded
+    playersExpanded=not playersExpanded
     if playersExpanded then
-        PlayerScroll.Visible = true
-        PlayersLabel.Visible = true
-        ClosePlayersBtn.Text = "▲ collapse players"
-        ClosePlayersBtn.Position = UDim2.new(0.5,-130,0,360)
+        PlayerScroll.Visible=true PlayersLabel.Visible=true
+        ClosePlayersBtn.Text="▲ collapse players" ClosePlayersBtn.Position=UDim2.new(0.5,-130,0,360)
         setHeight(EXPANDED_H)
     else
-        PlayerScroll.Visible = false
-        PlayersLabel.Visible = false
-        ClosePlayersBtn.Text = "▼ expand players"
-        ClosePlayersBtn.Position = UDim2.new(0.5,-130,0,192)
-        setHeight(242)
-        ProfilePanel.Visible = false
-        FriendsPanel.Visible = false
+        PlayerScroll.Visible=false PlayersLabel.Visible=false
+        ClosePlayersBtn.Text="▼ expand players" ClosePlayersBtn.Position=UDim2.new(0.5,-130,0,192)
+        setHeight(242) ProfilePanel.Visible=false FriendsPanel.Visible=false
     end
 end)
-
 ExpandBtn.MouseButton1Click:Connect(function()
-    config.expanded = not config.expanded
+    config.expanded=not config.expanded
     if config.expanded then
-        ExpandBtn.Text = "▼ hide"
-        Body.Visible = true
-        setHeight(playersExpanded and EXPANDED_H or 242)
+        ExpandBtn.Text="▼ hide" Body.Visible=true setHeight(playersExpanded and EXPANDED_H or 242)
     else
-        ExpandBtn.Text = "▶ show"
-        Body.Visible = false
-        ProfilePanel.Visible = false
-        FriendsPanel.Visible = false
+        ExpandBtn.Text="▶ show" Body.Visible=false
+        ProfilePanel.Visible=false FriendsPanel.Visible=false HudPanel.Visible=false resetHud()
         setHeight(COLLAPSED_H)
     end
 end)
 
-local dragging = false
-local resizing = false
-local dragStart, startPos
-local resizeStart, startSize
-local minSize = Vector2.new(200, 150)
-
+local dragging=false local resizing=false
+local dragStart,startPos,resizeStart,startSize
+local minSize=Vector2.new(200,150)
 MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local mousePos = input.Position
-        local framePos = MainFrame.AbsolutePosition
-        local frameSize = MainFrame.AbsoluteSize
-        if mousePos.X > framePos.X + frameSize.X - 15 and
-           mousePos.Y > framePos.Y + frameSize.Y - 15 then
-            resizing = true
-            resizeStart = mousePos
-            startSize = frameSize
-        else
-            dragging = true
-            dragStart = mousePos
-            startPos = MainFrame.Position
-        end
+    if input.UserInputType==Enum.UserInputType.MouseButton1 then
+        local mp=input.Position local fp=MainFrame.AbsolutePosition local fs=MainFrame.AbsoluteSize
+        if mp.X>fp.X+fs.X-15 and mp.Y>fp.Y+fs.Y-15 then
+            resizing=true resizeStart=mp startSize=fs
+        else dragging=true dragStart=mp startPos=MainFrame.Position end
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
+    if input.UserInputType==Enum.UserInputType.MouseMovement then
         if resizing then
-            local delta = input.Position - resizeStart
-            local newWidth = math.max(minSize.X, startSize.X + delta.X)
-            local newHeight = math.max(minSize.Y, startSize.Y + delta.Y)
-            MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+            local d=input.Position-resizeStart
+            MainFrame.Size=UDim2.new(0,math.max(minSize.X,startSize.X+d.X),0,math.max(minSize.Y,startSize.Y+d.Y))
         elseif dragging then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            ProfilePanel.Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset + 310, MainFrame.Position.Y.Scale, MainFrame.Position.Y.Offset)
-            FriendsPanel.Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset + 600, MainFrame.Position.Y.Scale, MainFrame.Position.Y.Offset)
+            local d=input.Position-dragStart
+            MainFrame.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+d.X,startPos.Y.Scale,startPos.Y.Offset+d.Y)
+            ProfilePanel.Position=UDim2.new(MainFrame.Position.X.Scale,MainFrame.Position.X.Offset+310,MainFrame.Position.Y.Scale,MainFrame.Position.Y.Offset)
+            FriendsPanel.Position=UDim2.new(MainFrame.Position.X.Scale,MainFrame.Position.X.Offset+600,MainFrame.Position.Y.Scale,MainFrame.Position.Y.Offset)
         elseif profileResizing then
-            local delta = input.Position - profileResizeStart
-            local newW = math.max(profileMinSize.X, profileStartSize.X + delta.X)
-            local newH = math.max(profileMinSize.Y, profileStartSize.Y + delta.Y)
-            ProfilePanel.Size = UDim2.new(0, newW, 0, newH)
+            local d=input.Position-profileResizeStart
+            ProfilePanel.Size=UDim2.new(0,math.max(profileMinSize.X,profileStartSize.X+d.X),0,math.max(profileMinSize.Y,profileStartSize.Y+d.Y))
         elseif profileDragging then
-            local delta = input.Position - profileDragStart
-            ProfilePanel.Position = UDim2.new(profileStartPos.X.Scale, profileStartPos.X.Offset + delta.X, profileStartPos.Y.Scale, profileStartPos.Y.Offset + delta.Y)
+            local d=input.Position-profileDragStart
+            ProfilePanel.Position=UDim2.new(profileStartPos.X.Scale,profileStartPos.X.Offset+d.X,profileStartPos.Y.Scale,profileStartPos.Y.Offset+d.Y)
         elseif friendsDragging then
-            local delta = input.Position - friendsDragStart
-            FriendsPanel.Position = UDim2.new(friendsStartPos.X.Scale, friendsStartPos.X.Offset + delta.X, friendsStartPos.Y.Scale, friendsStartPos.Y.Offset + delta.Y)
+            local d=input.Position-friendsDragStart
+            FriendsPanel.Position=UDim2.new(friendsStartPos.X.Scale,friendsStartPos.X.Offset+d.X,friendsStartPos.Y.Scale,friendsStartPos.Y.Offset+d.Y)
+        elseif hudDragging then
+            local d=input.Position-hudDragStart
+            HudPanel.Position=UDim2.new(hudStartPos.X.Scale,hudStartPos.X.Offset+d.X,hudStartPos.Y.Scale,hudStartPos.Y.Offset+d.Y)
         end
     end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
-        resizing = false
+    if input.UserInputType==Enum.UserInputType.MouseButton1 then
+        dragging=false resizing=false profileDragging=false profileResizing=false friendsDragging=false hudDragging=false
     end
 end)
 
-local keyObjects = {}
-
-local Board = Instance.new("Frame", HighkeyHub)
-Board.Name = "InputOverlayBoard"
-Board.Size = UDim2.new(0,450,0,180)
-Board.AnchorPoint = Vector2.new(0,1)
-Board.Position = UDim2.new(0,10,1,-10)
-Board.BackgroundColor3 = Color3.fromRGB(20,20,20)
-Board.BackgroundTransparency = 0.2
-Board.BorderSizePixel = 0
-Instance.new("UICorner", Board).CornerRadius = UDim.new(0,10)
-local BoardStroke = Instance.new("UIStroke", Board)
-BoardStroke.Color = config.lavender BoardStroke.Thickness = 1.5 BoardStroke.Transparency = 0.6
-local BoardPadding = Instance.new("UIPadding", Board)
+local keyObjects={}
+local Board=Instance.new("Frame",HighkeyHub)
+Board.Name="InputOverlayBoard" Board.Size=UDim2.new(0,450,0,180)
+Board.AnchorPoint=Vector2.new(0,1) Board.Position=UDim2.new(0,10,1,-10)
+Board.BackgroundColor3=Color3.fromRGB(20,20,20) Board.BackgroundTransparency=0.2 Board.BorderSizePixel=0
+Instance.new("UICorner",Board).CornerRadius=UDim.new(0,10)
+local BoardStroke=Instance.new("UIStroke",Board)
+BoardStroke.Color=config.lavender BoardStroke.Thickness=1.5 BoardStroke.Transparency=0.6
+local BoardPadding=Instance.new("UIPadding",Board)
 BoardPadding.PaddingTop=UDim.new(0,6) BoardPadding.PaddingLeft=UDim.new(0,6)
 BoardPadding.PaddingBottom=UDim.new(0,6) BoardPadding.PaddingRight=UDim.new(0,6)
-
-local function createKey(text, x, y, w, h, keyCodeName)
-    local key = Instance.new("TextLabel", Board)
+local function createKey(text,x,y,w,h,keyCodeName)
+    local key=Instance.new("TextLabel",Board)
     key.Text=text key.Size=UDim2.new(0,w or 28,0,h or 28)
     key.Position=UDim2.new(0,x,0,y) key.BackgroundColor3=config.key_bg
     key.TextColor3=Color3.new(1,1,1) key.Font=Enum.Font.GothamBold key.TextSize=10
     Instance.new("UICorner",key).CornerRadius=UDim.new(0,4)
-    if keyCodeName then keyObjects[keyCodeName]=key end
-    return key
+    if keyCodeName then keyObjects[keyCodeName]=key end return key
 end
-
 createKey("Esc",0,0,35,28,"Escape")
 local nums={"One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Zero"}
 for i,v in ipairs(nums) do createKey(tostring(i%10),38+(i-1)*31,0,28,28,v) end
@@ -1130,7 +914,6 @@ createKey("Ctrl",0,124,35,28,"LeftControl")
 createKey("Alt",38,124,35,28,"LeftAlt")
 createKey("Space",76,124,150,28,"Space")
 createKey("Enter",229,124,55,28,"Return")
-
 local MouseBody=Instance.new("Frame",Board)
 MouseBody.Size=UDim2.new(0,60,0,90) MouseBody.Position=UDim2.new(0,370,0.2,0)
 MouseBody.BackgroundColor3=config.key_bg Instance.new("UICorner",MouseBody).CornerRadius=UDim.new(0,30)
@@ -1139,219 +922,156 @@ LMB.BackgroundColor3=Color3.fromRGB(50,50,50) Instance.new("UICorner",LMB)
 local RMB=Instance.new("Frame",MouseBody) RMB.Size=UDim2.new(0.5,-2,0.4,0) RMB.Position=UDim2.new(0.5,1,0,2)
 RMB.BackgroundColor3=Color3.fromRGB(50,50,50) Instance.new("UICorner",RMB)
 
-UserInputService.InputBegan:Connect(function(input, processed)
-    if input.KeyCode == Enum.KeyCode.M and not processed then
-        config.guiVisible = not config.guiVisible
+UserInputService.InputBegan:Connect(function(input,processed)
+    if input.KeyCode==Enum.KeyCode.M and not processed then
+        config.guiVisible=not config.guiVisible
         if config.guiVisible then
-            MainFrame.Visible = true
-            ControlCanvas.GroupTransparency = 1
-            TweenService:Create(ControlCanvas, TweenInfo.new(0.3), {GroupTransparency = 0}):Play()
+            MainFrame.Visible=true ControlCanvas.GroupTransparency=1
+            TweenService:Create(ControlCanvas,TweenInfo.new(0.3),{GroupTransparency=0}):Play()
         else
-            local t = TweenService:Create(ControlCanvas, TweenInfo.new(0.3), {GroupTransparency = 1})
+            local t=TweenService:Create(ControlCanvas,TweenInfo.new(0.3),{GroupTransparency=1})
             t:Play()
             t.Completed:Connect(function()
                 if not config.guiVisible then
-                    MainFrame.Visible = false
-                    ProfilePanel.Visible = false
-                    FriendsPanel.Visible = false
+                    MainFrame.Visible=false ProfilePanel.Visible=false
+                    FriendsPanel.Visible=false HudPanel.Visible=false resetHud()
                 end
             end)
         end
     end
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        local k = keyObjects[input.KeyCode.Name]
-        if k then k.BackgroundColor3 = config.lavender k.TextColor3 = Color3.new(0,0,0) end
-    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
-        LMB.BackgroundColor3 = config.lavender
-    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-        RMB.BackgroundColor3 = config.lavender
-    end
+    if input.UserInputType==Enum.UserInputType.Keyboard then
+        local k=keyObjects[input.KeyCode.Name]
+        if k then k.BackgroundColor3=config.lavender k.TextColor3=Color3.new(0,0,0) end
+    elseif input.UserInputType==Enum.UserInputType.MouseButton1 then LMB.BackgroundColor3=config.lavender
+    elseif input.UserInputType==Enum.UserInputType.MouseButton2 then RMB.BackgroundColor3=config.lavender end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType==Enum.UserInputType.Keyboard then
         local k=keyObjects[input.KeyCode.Name]
         if k then k.BackgroundColor3=config.key_bg k.TextColor3=Color3.new(1,1,1) end
     elseif input.UserInputType==Enum.UserInputType.MouseButton1 then LMB.BackgroundColor3=Color3.fromRGB(50,50,50)
-    elseif input.UserInputType==Enum.UserInputType.MouseButton2 then RMB.BackgroundColor3=Color3.fromRGB(50,50,50)
-    end
+    elseif input.UserInputType==Enum.UserInputType.MouseButton2 then RMB.BackgroundColor3=Color3.fromRGB(50,50,50) end
 end)
 
-
-local kakuConn = nil
-local kakuAngle = 0
+local kakuConn=nil local kakuAngle=0
 KakuBtn.MouseButton1Click:Connect(function()
-    local kakuActive = KakuBtn.Text == "Kaku: ON"
-    kakuActive = not kakuActive
-    KakuBtn.Text = kakuActive and "Kaku: ON" or "Kaku: OFF"
-    KakuBtn.BackgroundColor3 = kakuActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
-    if kakuActive then
-        kakuConn = RunService.RenderStepped:Connect(function(dt)
-            local c = player.Character
-            local root = c and c:FindFirstChild("HumanoidRootPart")
+    local on=KakuBtn.Text=="Kaku: ON" on=not on
+    KakuBtn.Text=on and "Kaku: ON" or "Kaku: OFF"
+    KakuBtn.BackgroundColor3=on and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if on then
+        kakuConn=RunService.RenderStepped:Connect(function(dt)
+            local c=player.Character local root=c and c:FindFirstChild("HumanoidRootPart")
             if root then
-                kakuAngle = kakuAngle + dt * 9999
-                local rad = math.rad(kakuAngle)
-                root.CFrame = CFrame.new(
-                    math.cos(rad) * 50000,
-                    -100000,
-                    math.sin(rad) * 50000
-                )
+                kakuAngle=kakuAngle+dt*9999 local rad=math.rad(kakuAngle)
+                root.CFrame=CFrame.new(math.cos(rad)*50000,-100000,math.sin(rad)*50000)
             end
         end)
-    else
-        if kakuConn then kakuConn:Disconnect() kakuConn = nil end
-        kakuAngle = 0
-    end
+    else if kakuConn then kakuConn:Disconnect() kakuConn=nil end kakuAngle=0 end
 end)
-
-
-local tornadoConn = nil
-local tornadoAngle = 0
+local tornadoConn=nil local tornadoAngle=0
 TornadoBtn.MouseButton1Click:Connect(function()
-    local tornadoActive = TornadoBtn.Text == "Tornado: ON"
-    tornadoActive = not tornadoActive
-    TornadoBtn.Text = tornadoActive and "Tornado: ON" or "Tornado: OFF"
-    TornadoBtn.BackgroundColor3 = tornadoActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
-    if tornadoActive then
-        tornadoConn = RunService.RenderStepped:Connect(function(dt)
-            local c = player.Character
-            local root = c and c:FindFirstChild("HumanoidRootPart")
+    local on=TornadoBtn.Text=="Tornado: ON" on=not on
+    TornadoBtn.Text=on and "Tornado: ON" or "Tornado: OFF"
+    TornadoBtn.BackgroundColor3=on and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if on then
+        tornadoConn=RunService.RenderStepped:Connect(function(dt)
+            local c=player.Character local root=c and c:FindFirstChild("HumanoidRootPart")
             if root then
-                tornadoAngle = tornadoAngle + dt * 50000
-                local rad = math.rad(tornadoAngle)
-                local x = math.cos(rad) * 10000
-                local z = math.sin(rad) * 10000
-                root.CFrame = CFrame.new(x, 0, z)
+                tornadoAngle=tornadoAngle+dt*50000 local rad=math.rad(tornadoAngle)
+                root.CFrame=CFrame.new(math.cos(rad)*10000,0,math.sin(rad)*10000)
             end
         end)
-    else
-        if tornadoConn then tornadoConn:Disconnect() tornadoConn = nil end
-    end
+    else if tornadoConn then tornadoConn:Disconnect() tornadoConn=nil end end
 end)
-local stasisConn = nil
+local stasisConn=nil
 StasisBtn.MouseButton1Click:Connect(function()
-    local stasisActive = StasisBtn.Text == "Stasis: ON"
-    stasisActive = not stasisActive
-    StasisBtn.Text = stasisActive and "Stasis: ON" or "Stasis: OFF"
-    StasisBtn.BackgroundColor3 = stasisActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
-    if stasisActive then
-        stasisConn = RunService.RenderStepped:Connect(function()
-            local c = player.Character
-            local root = c and c:FindFirstChild("HumanoidRootPart")
-            if root then root.CFrame = CFrame.new(280, -4, 465) end
+    local on=StasisBtn.Text=="Stasis: ON" on=not on
+    StasisBtn.Text=on and "Stasis: ON" or "Stasis: OFF"
+    StasisBtn.BackgroundColor3=on and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if on then
+        stasisConn=RunService.RenderStepped:Connect(function()
+            local c=player.Character local root=c and c:FindFirstChild("HumanoidRootPart")
+            if root then root.CFrame=CFrame.new(280,-4,465) end
         end)
-    else
-        if stasisConn then stasisConn:Disconnect() stasisConn = nil end
-    end
+    else if stasisConn then stasisConn:Disconnect() stasisConn=nil end end
 end)
-
-local maniacConn = nil
+local maniacConn=nil
 ManiacBtn.MouseButton1Click:Connect(function()
-    local maniacActive = ManiacBtn.Text == "Maniac: ON"
-    maniacActive = not maniacActive
-    ManiacBtn.Text = maniacActive and "Maniac: ON" or "Maniac: OFF"
-    ManiacBtn.BackgroundColor3 = maniacActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
-    if maniacActive then
-        maniacConn = RunService.RenderStepped:Connect(function()
-            local c = player.Character
-            local root = c and c:FindFirstChild("HumanoidRootPart")
-            if root then
-                local mapSize = 2000
-                root.CFrame = CFrame.new(
-                    math.random(-mapSize, mapSize),
-                    math.random(-50, 500),
-                    math.random(-mapSize, mapSize)
-                )
-            end
+    local on=ManiacBtn.Text=="Maniac: ON" on=not on
+    ManiacBtn.Text=on and "Maniac: ON" or "Maniac: OFF"
+    ManiacBtn.BackgroundColor3=on and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if on then
+        maniacConn=RunService.RenderStepped:Connect(function()
+            local c=player.Character local root=c and c:FindFirstChild("HumanoidRootPart")
+            if root then local ms=2000 root.CFrame=CFrame.new(math.random(-ms,ms),math.random(-50,500),math.random(-ms,ms)) end
         end)
-    else
-        if maniacConn then maniacConn:Disconnect() maniacConn = nil end
-    end
+    else if maniacConn then maniacConn:Disconnect() maniacConn=nil end end
 end)
-
-local rinneganActive = false
-local rinneganConn = nil
+local rinneganActive=false local rinneganConn=nil
 RinneganBtn.MouseButton1Click:Connect(function()
-    rinneganActive = not rinneganActive
-    RinneganX.Visible = rinneganActive
-    RinneganBtn.BackgroundColor3 = rinneganActive and Color3.fromRGB(90,0,160) or Color3.fromRGB(60,0,120)
+    rinneganActive=not rinneganActive
+    RinneganX.Visible=rinneganActive
+    RinneganBtn.BackgroundColor3=rinneganActive and Color3.fromRGB(90,0,160) or Color3.fromRGB(60,0,120)
     if rinneganActive then
-        camera.CameraType = Enum.CameraType.Scriptable
-        rinneganConn = RunService.RenderStepped:Connect(function()
+        camera.CameraType=Enum.CameraType.Scriptable
+        rinneganConn=RunService.RenderStepped:Connect(function()
             if not currentProfileId then return end
-            local targetPlayer = Players:GetPlayerByUserId(currentProfileId)
-            if targetPlayer and targetPlayer.Character then
-                local torso = targetPlayer.Character:FindFirstChild("UpperTorso")
-                    or targetPlayer.Character:FindFirstChild("Torso")
-                if torso then
-                    camera.CFrame = CFrame.new(torso.Position + Vector3.new(0, 2, 6), torso.Position)
-                end
+            local tp=Players:GetPlayerByUserId(currentProfileId)
+            if tp and tp.Character then
+                local torso=tp.Character:FindFirstChild("UpperTorso") or tp.Character:FindFirstChild("Torso")
+                if torso then camera.CFrame=CFrame.new(torso.Position+Vector3.new(0,2,6),torso.Position) end
             end
         end)
-    else
-        if rinneganConn then rinneganConn:Disconnect() rinneganConn = nil end
-        camera.CameraType = Enum.CameraType.Custom
-    end
+    else if rinneganConn then rinneganConn:Disconnect() rinneganConn=nil end camera.CameraType=Enum.CameraType.Custom end
 end)
 HighkeyBtn.MouseButton1Click:Connect(function()
-    config.active = not config.active
-    HighkeyBtn.Text = config.active and "Highkey: ON" or "Highkey: OFF"
-    HighkeyBtn.BackgroundColor3 = config.active and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    config.active=not config.active
+    HighkeyBtn.Text=config.active and "Highkey: ON" or "Highkey: OFF"
+    HighkeyBtn.BackgroundColor3=config.active and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
 end)
-
 SkyBtn.MouseButton1Click:Connect(function()
-    config.skyActive = not config.skyActive
-    SkyBtn.Text = config.skyActive and "Skybox: ON" or "Skybox: OFF"
-    SkyBtn.BackgroundColor3 = config.skyActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    config.skyActive=not config.skyActive
+    SkyBtn.Text=config.skyActive and "Skybox: ON" or "Skybox: OFF"
+    SkyBtn.BackgroundColor3=config.skyActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
     if config.skyActive then
-        local sky = Lighting:FindFirstChild("HighkeySky") or Instance.new("Sky")
-        sky.Name = "HighkeySky"
-        local id = "rbxassetid://14777730300"
-        sky.SkyboxBk=id sky.SkyboxDn=id sky.SkyboxFt=id
-        sky.SkyboxLf=id sky.SkyboxRt=id sky.SkyboxUp=id sky.Parent=Lighting
-        Lighting.ClockTime=0 Lighting.Brightness=3
-        Lighting.ExposureCompensation=0.5 Lighting.GlobalShadows=false
+        local sky=Lighting:FindFirstChild("HighkeySky") or Instance.new("Sky")
+        sky.Name="HighkeySky"
+        local id="rbxassetid://14777730300"
+        sky.SkyboxBk=id sky.SkyboxDn=id sky.SkyboxFt=id sky.SkyboxLf=id sky.SkyboxRt=id sky.SkyboxUp=id sky.Parent=Lighting
+        Lighting.ClockTime=0 Lighting.Brightness=3 Lighting.ExposureCompensation=0.5 Lighting.GlobalShadows=false
         Lighting.Ambient=Color3.fromRGB(70,80,120) Lighting.OutdoorAmbient=Color3.fromRGB(70,80,120)
-        local atm = Lighting:FindFirstChild("Highkey_Atmosphere") or Instance.new("Atmosphere")
+        local atm=Lighting:FindFirstChild("Highkey_Atmosphere") or Instance.new("Atmosphere")
         atm.Name="Highkey_Atmosphere" atm.Density=0.3 atm.Offset=0.1
-        atm.Color=Color3.fromRGB(40,60,120) atm.Decay=Color3.fromRGB(20,30,80)
-        atm.Glare=0 atm.Haze=1.5 atm.Parent=Lighting
-        local cc = Lighting:FindFirstChild("Highkey_CC") or Instance.new("ColorCorrectionEffect",Lighting)
-        cc.Name="Highkey_CC" cc.Brightness=0 cc.Contrast=0.1 cc.Saturation=-0.1
-        cc.TintColor=Color3.fromRGB(180,200,255)
+        atm.Color=Color3.fromRGB(40,60,120) atm.Decay=Color3.fromRGB(20,30,80) atm.Glare=0 atm.Haze=1.5 atm.Parent=Lighting
+        local cc=Lighting:FindFirstChild("Highkey_CC") or Instance.new("ColorCorrectionEffect",Lighting)
+        cc.Name="Highkey_CC" cc.Brightness=0 cc.Contrast=0.1 cc.Saturation=-0.1 cc.TintColor=Color3.fromRGB(180,200,255)
     else
         local sky=Lighting:FindFirstChild("HighkeySky") if sky then sky:Destroy() end
         local atm=Lighting:FindFirstChild("Highkey_Atmosphere") if atm then atm:Destroy() end
         local sun=Lighting:FindFirstChild("Highkey_SunRays") if sun then sun:Destroy() end
         Lighting.ClockTime=originalLighting.ClockTime Lighting.Brightness=originalLighting.Brightness
-        Lighting.ExposureCompensation=originalLighting.ExposureCompensation
-        Lighting.GlobalShadows=originalLighting.GlobalShadows
+        Lighting.ExposureCompensation=originalLighting.ExposureCompensation Lighting.GlobalShadows=originalLighting.GlobalShadows
         Lighting.Ambient=originalLighting.Ambient Lighting.OutdoorAmbient=originalLighting.OutdoorAmbient
         local cc=Lighting:FindFirstChild("Highkey_CC")
         if cc then cc.Brightness=0 cc.Contrast=0 cc.Saturation=0 cc.TintColor=Color3.new(1,1,1) end
     end
 end)
-
-local cc = Lighting:FindFirstChild("Highkey_CC") or Instance.new("ColorCorrectionEffect",Lighting)
-cc.Name = "Highkey_CC"
-
+local cc=Lighting:FindFirstChild("Highkey_CC") or Instance.new("ColorCorrectionEffect",Lighting)
+cc.Name="Highkey_CC"
 RunService.RenderStepped:Connect(function(dt)
-    local t = tick()
-    config.intensity = config.active and math.min(config.intensity+dt*0.5,1) or math.max(config.intensity-dt*0.5,0)
-    if config.intensity > 0 then
-        config.hue = (t*0.4)%1
-        cc.TintColor = Color3.new(1,1,1):Lerp(Color3.fromHSV(config.hue,0.8,1),config.intensity)
-        camera.CFrame = camera.CFrame * CFrame.Angles(0,0,math.sin(t*2)*(0.35*config.intensity))
-        camera.FieldOfView = config.originalFOV + (math.sin(t*1.5)*(25*config.intensity))
+    local t=tick()
+    config.intensity=config.active and math.min(config.intensity+dt*0.5,1) or math.max(config.intensity-dt*0.5,0)
+    if config.intensity>0 then
+        config.hue=(t*0.4)%1
+        cc.TintColor=Color3.new(1,1,1):Lerp(Color3.fromHSV(config.hue,0.8,1),config.intensity)
+        camera.CFrame=camera.CFrame*CFrame.Angles(0,0,math.sin(t*2)*(0.35*config.intensity))
+        camera.FieldOfView=config.originalFOV+(math.sin(t*1.5)*(25*config.intensity))
     else
-        cc.TintColor = Color3.new(1,1,1)
-        camera.FieldOfView = config.originalFOV
+        cc.TintColor=Color3.new(1,1,1) camera.FieldOfView=config.originalFOV
     end
     if topLine then
-        local pulse = (math.sin(t*3)+1)/2
-        local color = Color3.fromRGB(255,0,0):Lerp(Color3.fromRGB(255,80,80),pulse)
-        topLine.BackgroundColor3=color bottomLine.BackgroundColor3=color
-        leftLine.BackgroundColor3=color rightLine.BackgroundColor3=color
+        local pulse=(math.sin(t*3)+1)/2
+        local color=Color3.fromRGB(255,0,0):Lerp(Color3.fromRGB(255,80,80),pulse)
+        topLine.BackgroundColor3=color bottomLine.BackgroundColor3=color leftLine.BackgroundColor3=color rightLine.BackgroundColor3=color
     end
 end) -- ez
