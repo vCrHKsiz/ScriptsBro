@@ -1178,30 +1178,30 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 
+local kakuConn = nil
+local kakuAngle = 0
 KakuBtn.MouseButton1Click:Connect(function()
     local kakuActive = KakuBtn.Text == "Kaku: ON"
     kakuActive = not kakuActive
     KakuBtn.Text = kakuActive and "Kaku: ON" or "Kaku: OFF"
     KakuBtn.BackgroundColor3 = kakuActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
     if kakuActive then
-        task.spawn(function()
-            while KakuBtn.Text == "Kaku: ON" do
-                local c = player.Character
-                local root = c and c:FindFirstChild("HumanoidRootPart")
-                if root then root.CFrame = CFrame.new(0, -100000, 0) end
-                task.wait(0.1)
+        kakuConn = RunService.RenderStepped:Connect(function(dt)
+            local c = player.Character
+            local root = c and c:FindFirstChild("HumanoidRootPart")
+            if root then
+                kakuAngle = kakuAngle + dt * 9999
+                local rad = math.rad(kakuAngle)
+                root.CFrame = CFrame.new(
+                    math.cos(rad) * 50000,
+                    -100000,
+                    math.sin(rad) * 50000
+                )
             end
         end)
     else
-        local char = player.Character
-        if char then
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if humanoid and humanoid.SeatPart then
-                local seat = humanoid.SeatPart
-                humanoid.Jump = true task.wait(0.1) humanoid.Jump = false task.wait(0.1)
-                if seat and seat:IsA("Seat") then seat:Sit(humanoid) end
-            end
-        end
+        if kakuConn then kakuConn:Disconnect() kakuConn = nil end
+        kakuAngle = 0
     end
 end)
 
