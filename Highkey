@@ -187,7 +187,8 @@ end
 
 local HighkeyBtn = makeHalfBtn("Highkey: OFF", 8, 0)
 local ManiacBtn  = makeHalfBtn("Maniac: OFF", 8, 134)
-local SkyBtn     = makeBtn("Skybox: OFF", 54)
+local SkyBtn     = makeHalfBtn("Skybox: OFF", 54, 0)
+local TornadoBtn = makeHalfBtn("Tornado: OFF", 54, 134)
 local KakuBtn    = makeBtn("Kaku: OFF", 100)
 local StasisBtn  = makeBtn("Stasis: OFF", 146)
 
@@ -1204,6 +1205,30 @@ KakuBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+
+local tornadoConn = nil
+local tornadoAngle = 0
+TornadoBtn.MouseButton1Click:Connect(function()
+    local tornadoActive = TornadoBtn.Text == "Tornado: ON"
+    tornadoActive = not tornadoActive
+    TornadoBtn.Text = tornadoActive and "Tornado: ON" or "Tornado: OFF"
+    TornadoBtn.BackgroundColor3 = tornadoActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if tornadoActive then
+        tornadoConn = RunService.RenderStepped:Connect(function(dt)
+            local c = player.Character
+            local root = c and c:FindFirstChild("HumanoidRootPart")
+            if root then
+                tornadoAngle = tornadoAngle + dt * 50000
+                local rad = math.rad(tornadoAngle)
+                local x = math.cos(rad) * 10000
+                local z = math.sin(rad) * 10000
+                root.CFrame = CFrame.new(x, 0, z)
+            end
+        end)
+    else
+        if tornadoConn then tornadoConn:Disconnect() tornadoConn = nil end
+    end
+end)
 local stasisConn = nil
 StasisBtn.MouseButton1Click:Connect(function()
     local stasisActive = StasisBtn.Text == "Stasis: ON"
