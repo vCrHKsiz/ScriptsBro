@@ -1034,21 +1034,60 @@ SkyBtn.MouseButton1Click:Connect(function()
     SkyBtn.Text=config.skyActive and "Skybox: ON" or "Skybox: OFF"
     SkyBtn.BackgroundColor3=config.skyActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
     if config.skyActive then
-        local sky=Lighting:FindFirstChild("HighkeySky") or Instance.new("Sky")
+        -- wipe any leftover effects first so they never stack
+        for _,v in ipairs(Lighting:GetChildren()) do
+            if v.Name=="Highkey_Bloom" or v.Name=="Highkey_CC" or v.Name=="Highkey_Atmosphere" or v.Name=="HighkeySky" then
+                v:Destroy()
+            end
+        end
+        local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+        if clouds then clouds.Density = 0 clouds.Cover = 0 end
+        local sky=Instance.new("Sky")
         sky.Name="HighkeySky"
-        local id="rbxassetid://14777730300"
-        sky.SkyboxBk=id sky.SkyboxDn=id sky.SkyboxFt=id sky.SkyboxLf=id sky.SkyboxRt=id sky.SkyboxUp=id sky.Parent=Lighting
-        Lighting.ClockTime=0 Lighting.Brightness=3 Lighting.ExposureCompensation=0.5 Lighting.GlobalShadows=false
-        Lighting.Ambient=Color3.fromRGB(70,80,120) Lighting.OutdoorAmbient=Color3.fromRGB(70,80,120)
-        local atm=Lighting:FindFirstChild("Highkey_Atmosphere") or Instance.new("Atmosphere")
-        atm.Name="Highkey_Atmosphere" atm.Density=0.3 atm.Offset=0.1
-        atm.Color=Color3.fromRGB(40,60,120) atm.Decay=Color3.fromRGB(20,30,80) atm.Glare=0 atm.Haze=1.5 atm.Parent=Lighting
-        local cc=Lighting:FindFirstChild("Highkey_CC") or Instance.new("ColorCorrectionEffect",Lighting)
-        cc.Name="Highkey_CC" cc.Brightness=0 cc.Contrast=0.1 cc.Saturation=-0.1 cc.TintColor=Color3.fromRGB(180,200,255)
+        sky.SkyboxBk="rbxassetid://119872829559983"
+        sky.SkyboxFt="rbxassetid://119872829559983"
+        sky.SkyboxLf="rbxassetid://119872829559983"
+        sky.SkyboxRt="rbxassetid://119872829559983"
+        sky.SkyboxUp="rbxassetid://119872829559983"
+        sky.SkyboxDn="rbxassetid://119872829559983"
+        sky.StarCount=7000
+        sky.MoonTextureId="rbxassetid://6444320592"
+        sky.MoonAngularSize=20
+        sky.SunAngularSize=0
+        sky.Parent=Lighting
+        task.wait(0.2)
+        sky.SkyboxBk="rbxassetid://119872829559983"
+        sky.SkyboxFt="rbxassetid://119872829559983"
+        sky.SkyboxLf="rbxassetid://119872829559983"
+        sky.SkyboxRt="rbxassetid://119872829559983"
+        sky.SkyboxUp="rbxassetid://119872829559983"
+        sky.SkyboxDn="rbxassetid://119872829559983"
+        Lighting.ClockTime=21
+        Lighting.Brightness=4
+        Lighting.ExposureCompensation=2
+        Lighting.GlobalShadows=true
+        Lighting.Ambient=Color3.fromRGB(160,90,220)
+        Lighting.OutdoorAmbient=Color3.fromRGB(140,70,200)
+        local atm=Instance.new("Atmosphere",Lighting)
+        atm.Name="Highkey_Atmosphere"
+        atm.Density=0.02
+        atm.Offset=0.01
+        atm.Color=Color3.fromRGB(170,90,230)
+        atm.Decay=Color3.fromRGB(130,50,190)
+        atm.Glare=1.5
+        atm.Haze=0.02
+        local bloom=Instance.new("BloomEffect",Lighting)
+        bloom.Name="Highkey_Bloom" bloom.Intensity=1.0 bloom.Size=35 bloom.Threshold=0.85
+        local cc=Instance.new("ColorCorrectionEffect",Lighting)
+        cc.Name="Highkey_CC" cc.Brightness=0.1 cc.Contrast=0.05 cc.Saturation=0.6 cc.TintColor=Color3.fromRGB(225,185,255)
     else
-        local sky=Lighting:FindFirstChild("HighkeySky") if sky then sky:Destroy() end
-        local atm=Lighting:FindFirstChild("Highkey_Atmosphere") if atm then atm:Destroy() end
-        local sun=Lighting:FindFirstChild("Highkey_SunRays") if sun then sun:Destroy() end
+        for _,v in ipairs(Lighting:GetChildren()) do
+            if v.Name=="Highkey_Bloom" or v.Name=="Highkey_CC" or v.Name=="Highkey_Atmosphere" or v.Name=="HighkeySky" or v.Name=="Highkey_SunRays" then
+                v:Destroy()
+            end
+        end
+        local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+        if clouds then clouds.Density = 0.5 clouds.Cover = 0.5 end
         Lighting.ClockTime=originalLighting.ClockTime Lighting.Brightness=originalLighting.Brightness
         Lighting.ExposureCompensation=originalLighting.ExposureCompensation Lighting.GlobalShadows=originalLighting.GlobalShadows
         Lighting.Ambient=originalLighting.Ambient Lighting.OutdoorAmbient=originalLighting.OutdoorAmbient
