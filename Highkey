@@ -1029,70 +1029,64 @@ HighkeyBtn.MouseButton1Click:Connect(function()
     HighkeyBtn.Text=config.active and "Highkey: ON" or "Highkey: OFF"
     HighkeyBtn.BackgroundColor3=config.active and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
 end)
+local function makeSky()
+    local sky=Instance.new("Sky")
+    sky.SkyboxUp="rbxassetid://74485939686371"
+    sky.SkyboxRt="rbxassetid://112979360943817"
+    sky.SkyboxLf="rbxassetid://101259264129637"
+    sky.SkyboxFt="rbxassetid://117478768424288"
+    sky.SkyboxDn="rbxassetid://83087013829800"
+    sky.SkyboxBk="rbxassetid://90618588788395"
+    sky.Parent=Lighting
+end
+local skyWatcher=nil
 SkyBtn.MouseButton1Click:Connect(function()
     config.skyActive=not config.skyActive
     SkyBtn.Text=config.skyActive and "Skybox: ON" or "Skybox: OFF"
     SkyBtn.BackgroundColor3=config.skyActive and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
     if config.skyActive then
-        -- wipe any leftover effects first so they never stack
-        for _,v in ipairs(Lighting:GetChildren()) do
-            if v.Name=="Highkey_Bloom" or v.Name=="Highkey_CC" or v.Name=="Highkey_Atmosphere" or v.Name=="HighkeySky" then
-                v:Destroy()
-            end
-        end
-        local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
-        if clouds then clouds.Density = 0 clouds.Cover = 0 end
-        local sky=Instance.new("Sky")
-        sky.Name="HighkeySky"
-        sky.SkyboxBk="rbxassetid://119872829559983"
-        sky.SkyboxFt="rbxassetid://119872829559983"
-        sky.SkyboxLf="rbxassetid://119872829559983"
-        sky.SkyboxRt="rbxassetid://119872829559983"
-        sky.SkyboxUp="rbxassetid://119872829559983"
-        sky.SkyboxDn="rbxassetid://119872829559983"
-        sky.StarCount=7000
-        sky.MoonTextureId="rbxassetid://6444320592"
-        sky.MoonAngularSize=20
-        sky.SunAngularSize=0
-        sky.Parent=Lighting
-        task.wait(0.2)
-        sky.SkyboxBk="rbxassetid://119872829559983"
-        sky.SkyboxFt="rbxassetid://119872829559983"
-        sky.SkyboxLf="rbxassetid://119872829559983"
-        sky.SkyboxRt="rbxassetid://119872829559983"
-        sky.SkyboxUp="rbxassetid://119872829559983"
-        sky.SkyboxDn="rbxassetid://119872829559983"
-        Lighting.ClockTime=21
-        Lighting.Brightness=4
-        Lighting.ExposureCompensation=2
-        Lighting.GlobalShadows=true
-        Lighting.Ambient=Color3.fromRGB(160,90,220)
-        Lighting.OutdoorAmbient=Color3.fromRGB(140,70,200)
+        Lighting.ClockTime=14
+        Lighting.Brightness=2
+        Lighting.ExposureCompensation=0.5
+        Lighting.Ambient=Color3.fromRGB(80,50,120)
+        Lighting.OutdoorAmbient=Color3.fromRGB(100,60,150)
+        makeSky()
         local atm=Instance.new("Atmosphere",Lighting)
         atm.Name="Highkey_Atmosphere"
-        atm.Density=0.02
-        atm.Offset=0.01
-        atm.Color=Color3.fromRGB(170,90,230)
-        atm.Decay=Color3.fromRGB(130,50,190)
-        atm.Glare=1.5
-        atm.Haze=0.02
+        atm.Density=0.3
+        atm.Offset=0.1
+        atm.Color=Color3.fromRGB(120,80,200)
+        atm.Decay=Color3.fromRGB(80,40,160)
+        atm.Glare=0.3
+        atm.Haze=1
         local bloom=Instance.new("BloomEffect",Lighting)
-        bloom.Name="Highkey_Bloom" bloom.Intensity=1.0 bloom.Size=35 bloom.Threshold=0.85
-        local cc=Instance.new("ColorCorrectionEffect",Lighting)
-        cc.Name="Highkey_CC" cc.Brightness=0.1 cc.Contrast=0.05 cc.Saturation=0.6 cc.TintColor=Color3.fromRGB(225,185,255)
+        bloom.Name="Highkey_Bloom"
+        bloom.Intensity=0.6
+        bloom.Size=24
+        bloom.Threshold=0.9
+        local cc2=Instance.new("ColorCorrectionEffect",Lighting)
+        cc2.Name="Highkey_SkyCC"
+        cc2.Brightness=0.05
+        cc2.Contrast=0.1
+        cc2.Saturation=0.4
+        cc2.TintColor=Color3.fromRGB(210,190,255)
+        skyWatcher=Lighting.ChildRemoved:Connect(function(child)
+            if child:IsA("Sky") and config.skyActive then
+                task.defer(makeSky)
+            end
+        end)
     else
+        if skyWatcher then skyWatcher:Disconnect() skyWatcher=nil end
+        Lighting.ClockTime=originalLighting.ClockTime
+        Lighting.Brightness=originalLighting.Brightness
+        Lighting.ExposureCompensation=originalLighting.ExposureCompensation
+        Lighting.Ambient=originalLighting.Ambient
+        Lighting.OutdoorAmbient=originalLighting.OutdoorAmbient
         for _,v in ipairs(Lighting:GetChildren()) do
-            if v.Name=="Highkey_Bloom" or v.Name=="Highkey_CC" or v.Name=="Highkey_Atmosphere" or v.Name=="HighkeySky" or v.Name=="Highkey_SunRays" then
+            if v:IsA("Sky") or v.Name=="Highkey_Atmosphere" or v.Name=="Highkey_Bloom" or v.Name=="Highkey_SkyCC" then
                 v:Destroy()
             end
         end
-        local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
-        if clouds then clouds.Density = 0.5 clouds.Cover = 0.5 end
-        Lighting.ClockTime=originalLighting.ClockTime Lighting.Brightness=originalLighting.Brightness
-        Lighting.ExposureCompensation=originalLighting.ExposureCompensation Lighting.GlobalShadows=originalLighting.GlobalShadows
-        Lighting.Ambient=originalLighting.Ambient Lighting.OutdoorAmbient=originalLighting.OutdoorAmbient
-        local cc=Lighting:FindFirstChild("Highkey_CC")
-        if cc then cc.Brightness=0 cc.Contrast=0 cc.Saturation=0 cc.TintColor=Color3.new(1,1,1) end
     end
 end)
 local cc=Lighting:FindFirstChild("Highkey_CC") or Instance.new("ColorCorrectionEffect",Lighting)
