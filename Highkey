@@ -1050,6 +1050,14 @@ SkyBtn.MouseButton1Click:Connect(function()
         Lighting.ExposureCompensation=0.5
         Lighting.Ambient=Color3.fromRGB(80,50,120)
         Lighting.OutdoorAmbient=Color3.fromRGB(100,60,150)
+        local clouds=workspace.Terrain:FindFirstChildOfClass("Clouds")
+        if clouds then clouds.Density=0 clouds.Cover=0 end
+        local skySound=Instance.new("Sound")
+        skySound.Name="Highkey_SkySound"
+        skySound.SoundId="rbxassetid://115213314108382"
+        skySound.Volume=0.7
+        skySound.Parent=workspace
+        skySound:Play()
         makeSky()
         local atm=Instance.new("Atmosphere",Lighting)
         atm.Name="Highkey_Atmosphere"
@@ -1082,6 +1090,10 @@ SkyBtn.MouseButton1Click:Connect(function()
         Lighting.ExposureCompensation=originalLighting.ExposureCompensation
         Lighting.Ambient=originalLighting.Ambient
         Lighting.OutdoorAmbient=originalLighting.OutdoorAmbient
+        local clouds=workspace.Terrain:FindFirstChildOfClass("Clouds")
+        if clouds then clouds.Density=0.5 clouds.Cover=0.5 end
+        local s=workspace:FindFirstChild("Highkey_SkySound")
+        if s then s:Stop() s:Destroy() end
         for _,v in ipairs(Lighting:GetChildren()) do
             if v:IsA("Sky") or v.Name=="Highkey_Atmosphere" or v.Name=="Highkey_Bloom" or v.Name=="Highkey_SkyCC" then
                 v:Destroy()
