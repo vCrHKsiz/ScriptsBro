@@ -1121,3 +1121,120 @@ RunService.RenderStepped:Connect(function(dt)
         topLine.BackgroundColor3=color bottomLine.BackgroundColor3=color leftLine.BackgroundColor3=color rightLine.BackgroundColor3=color
     end
 end) -- ez
+
+-- ============================================================
+-- Got bored and added this flight thingy
+-- ============================================================
+local flyCharacter = player.Character or player.CharacterAdded:Wait()
+local flyHumanoid = flyCharacter:WaitForChild("Humanoid")
+local flyRootPart = flyCharacter:WaitForChild("HumanoidRootPart")
+
+local FLY_WALK_SPEED   = 200
+local FLY_ASCEND_SPEED = 50
+local FLY_DESCEND_SPEED = 50
+local FLY_TURN_SPEED   = 0.15
+
+local flying          = false
+local flyAttachment   = nil
+local flyLinearVel    = nil
+local lastSpaceTap    = 0
+local DOUBLE_TAP_TIME = 0.3
+local spaceHeld       = false
+
+local function setFlying(enabled)
+    flying = enabled
+    if enabled then
+        flyHumanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+        flyHumanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+        flyHumanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+        flyHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+
+        flyAttachment = Instance.new("Attachment")
+        flyAttachment.Parent = flyRootPart
+
+        flyLinearVel = Instance.new("LinearVelocity")
+        flyLinearVel.Attachment0 = flyAttachment
+        flyLinearVel.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+        flyLinearVel.MaxForce = math.huge
+        flyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.World
+        flyLinearVel.VectorVelocity = Vector3.zero
+        flyLinearVel.Parent = flyRootPart
+    else
+        flyHumanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+        flyHumanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+        flyHumanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+
+        if flyLinearVel then flyLinearVel:Destroy(); flyLinearVel = nil end
+        if flyAttachment then flyAttachment:Destroy(); flyAttachment = nil end
+
+        flyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.Space then
+        local now = tick()
+        if now - lastSpaceTap < DOUBLE_TAP_TIME then
+            setFlying(not flying)
+        end
+        lastSpaceTap = now
+        spaceHeld = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Space then
+        spaceHeld = false
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    if not flying then return end
+
+    local cam = workspace.CurrentCamera
+    local moveDir = Vector3.zero
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+        moveDir += Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z)
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+        moveDir -= Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z)
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+        moveDir -= Vector3.new(cam.CFrame.RightVector.X, 0, cam.CFrame.RightVector.Z)
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+        moveDir += Vector3.new(cam.CFrame.RightVector.X, 0, cam.CFrame.RightVector.Z)
+    end
+
+    if moveDir.Magnitude > 0 then
+        moveDir = moveDir.Unit
+        local targetCFrame = CFrame.new(flyRootPart.Position, flyRootPart.Position + moveDir)
+        flyRootPart.CFrame = flyRootPart.CFrame:Lerp(targetCFrame, FLY_TURN_SPEED)
+    end
+
+    local vertY = 0
+    if spaceHeld then
+        vertY = FLY_ASCEND_SPEED
+    elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+        vertY = -FLY_DESCEND_SPEED
+    end
+
+    flyLinearVel.VectorVelocity = Vector3.new(
+        moveDir.X * FLY_WALK_SPEED,
+        vertY,
+        moveDir.Z * FLY_WALK_SPEED
+    )
+
+    flyHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+end)
+
+player.CharacterAdded:Connect(function(newChar)
+    flyCharacter = newChar
+    flyHumanoid  = newChar:WaitForChild("Humanoid")
+    flyRootPart  = newChar:WaitForChild("HumanoidRootPart")
+    flying       = false
+    flyAttachment = nil
+    flyLinearVel  = nil
+end)   -- kinda Goofy and spins your avatar but just reset the flight lol
