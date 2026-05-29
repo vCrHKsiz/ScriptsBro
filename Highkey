@@ -997,7 +997,7 @@ StasisBtn.MouseButton1Click:Connect(function()
         end)
     else if stasisConn then stasisConn:Disconnect() stasisConn=nil end end
 end)
--- GOOF: teleport away when anyone gets within 31 studs
+-- GOOF ADDED
 local goofConn=nil
 GoofBtn.MouseButton1Click:Connect(function()
     local on=GoofBtn.Text=="Goof: ON" on=not on
@@ -1011,7 +1011,7 @@ GoofBtn.MouseButton1Click:Connect(function()
                 if p~=player and p.Character then
                     local pr=p.Character:FindFirstChild("HumanoidRootPart")
                     if pr and (root.Position-pr.Position).Magnitude<=31 then
-                        -- pick a random horizontal direction 40 studs away from them
+                        
                         local angle=math.random()*math.pi*2
                         local offset=Vector3.new(math.cos(angle)*40,0,math.sin(angle)*40)
                         root.CFrame=CFrame.new(pr.Position+offset+Vector3.new(0,3,0))
@@ -1023,7 +1023,7 @@ GoofBtn.MouseButton1Click:Connect(function()
     else if goofConn then goofConn:Disconnect() goofConn=nil end end
 end)
 
--- GROOV: hard lock position — instant, no momentum, no fall on release
+-- GROOV
 local groovConn=nil local groovPos=nil
 GroovBtn.MouseButton1Click:Connect(function()
     local on=GroovBtn.Text=="Groov: ON" on=not on
@@ -1036,7 +1036,7 @@ GroovBtn.MouseButton1Click:Connect(function()
             local c2=player.Character local root2=c2 and c2:FindFirstChild("HumanoidRootPart")
             if root2 and groovPos then
                 local assembly=root2.AssemblyRootPart or root2
-                -- zero ALL velocity so nothing accumulates while locked
+                
                 assembly.AssemblyLinearVelocity=Vector3.zero
                 assembly.AssemblyAngularVelocity=Vector3.zero
                 local offset=assembly.CFrame:ToObjectSpace(root2.CFrame)
@@ -1045,7 +1045,7 @@ GroovBtn.MouseButton1Click:Connect(function()
         end)
     else
         if groovConn then groovConn:Disconnect() groovConn=nil end
-        -- zero velocity on release so there's no built-up momentum to fall with
+        
         local c2=player.Character local root2=c2 and c2:FindFirstChild("HumanoidRootPart")
         if root2 then
             local assembly=root2.AssemblyRootPart or root2
