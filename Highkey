@@ -149,8 +149,10 @@ local HighkeyBtn=makeHalfBtn("Highkey: OFF",8,0)
 local ManiacBtn=makeHalfBtn("Maniac: OFF",8,134)
 local SkyBtn=makeHalfBtn("Skybox: OFF",54,0)
 local TornadoBtn=makeHalfBtn("Tornado: OFF",54,134)
-local KakuBtn=makeBtn("Kaku: OFF",100)
-local StasisBtn=makeBtn("Stasis: OFF",146)
+local KakuBtn=makeHalfBtn("Kaku: OFF",100,0)
+local GoofBtn=makeHalfBtn("Goof: OFF",100,134)
+local StasisBtn=makeHalfBtn("Stasis: OFF",146,0)
+local GroovBtn=makeHalfBtn("Groov: OFF",146,134)
 local PlayersLabel=Instance.new("TextLabel",Body)
 PlayersLabel.Size=UDim2.new(0,260,0,16) PlayersLabel.Position=UDim2.new(0.5,-130,0,192)
 PlayersLabel.BackgroundTransparency=1 PlayersLabel.Text="PLAYERS IN SERVER"
@@ -995,6 +997,65 @@ StasisBtn.MouseButton1Click:Connect(function()
         end)
     else if stasisConn then stasisConn:Disconnect() stasisConn=nil end end
 end)
+-- GOOF: teleport away when anyone gets within 31 studs
+local goofConn=nil
+GoofBtn.MouseButton1Click:Connect(function()
+    local on=GoofBtn.Text=="Goof: ON" on=not on
+    GoofBtn.Text=on and "Goof: ON" or "Goof: OFF"
+    GoofBtn.BackgroundColor3=on and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if on then
+        goofConn=RunService.Heartbeat:Connect(function()
+            local c=player.Character local root=c and c:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            for _,p in ipairs(Players:GetPlayers()) do
+                if p~=player and p.Character then
+                    local pr=p.Character:FindFirstChild("HumanoidRootPart")
+                    if pr and (root.Position-pr.Position).Magnitude<=31 then
+                        -- pick a random horizontal direction 40 studs away from them
+                        local angle=math.random()*math.pi*2
+                        local offset=Vector3.new(math.cos(angle)*40,0,math.sin(angle)*40)
+                        root.CFrame=CFrame.new(pr.Position+offset+Vector3.new(0,3,0))
+                        break
+                    end
+                end
+            end
+        end)
+    else if goofConn then goofConn:Disconnect() goofConn=nil end end
+end)
+
+-- GROOV: hard lock position — instant, no momentum, no fall on release
+local groovConn=nil local groovPos=nil
+GroovBtn.MouseButton1Click:Connect(function()
+    local on=GroovBtn.Text=="Groov: ON" on=not on
+    GroovBtn.Text=on and "Groov: ON" or "Groov: OFF"
+    GroovBtn.BackgroundColor3=on and Color3.fromRGB(60,0,100) or Color3.fromRGB(30,30,30)
+    if on then
+        local c=player.Character local root=c and c:FindFirstChild("HumanoidRootPart")
+        if root then groovPos=root.CFrame end
+        groovConn=RunService.RenderStepped:Connect(function()
+            local c2=player.Character local root2=c2 and c2:FindFirstChild("HumanoidRootPart")
+            if root2 and groovPos then
+                local assembly=root2.AssemblyRootPart or root2
+                -- zero ALL velocity so nothing accumulates while locked
+                assembly.AssemblyLinearVelocity=Vector3.zero
+                assembly.AssemblyAngularVelocity=Vector3.zero
+                local offset=assembly.CFrame:ToObjectSpace(root2.CFrame)
+                assembly.CFrame=groovPos*offset:Inverse()
+            end
+        end)
+    else
+        if groovConn then groovConn:Disconnect() groovConn=nil end
+        -- zero velocity on release so there's no built-up momentum to fall with
+        local c2=player.Character local root2=c2 and c2:FindFirstChild("HumanoidRootPart")
+        if root2 then
+            local assembly=root2.AssemblyRootPart or root2
+            assembly.AssemblyLinearVelocity=Vector3.zero
+            assembly.AssemblyAngularVelocity=Vector3.zero
+        end
+        groovPos=nil
+    end
+end)
+
 local maniacConn=nil
 ManiacBtn.MouseButton1Click:Connect(function()
     local on=ManiacBtn.Text=="Maniac: ON" on=not on
@@ -1129,10 +1190,10 @@ local flyCharacter = player.Character or player.CharacterAdded:Wait()
 local flyHumanoid = flyCharacter:WaitForChild("Humanoid")
 local flyRootPart = flyCharacter:WaitForChild("HumanoidRootPart")
 
-local FLY_WALK_SPEED   = 200
-local FLY_ASCEND_SPEED = 50
+local FLY_WALK_SPEED    = 200
+local FLY_ASCEND_SPEED  = 50
 local FLY_DESCEND_SPEED = 50
-local FLY_TURN_SPEED   = 0.15
+local FLY_TURN_SPEED    = 0.15
 
 local flying          = false
 local flyAttachment   = nil
@@ -1231,10 +1292,10 @@ RunService.Heartbeat:Connect(function()
 end)
 
 player.CharacterAdded:Connect(function(newChar)
-    flyCharacter = newChar
-    flyHumanoid  = newChar:WaitForChild("Humanoid")
-    flyRootPart  = newChar:WaitForChild("HumanoidRootPart")
-    flying       = false
+    flyCharacter  = newChar
+    flyHumanoid   = newChar:WaitForChild("Humanoid")
+    flyRootPart   = newChar:WaitForChild("HumanoidRootPart")
+    flying        = false
     flyAttachment = nil
     flyLinearVel  = nil
-end)   -- kinda Goofy and spins your avatar but just reset the flight lol
+end) -- kinda Goofy and spins your avatar but just reset the flight lol
