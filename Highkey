@@ -997,7 +997,11 @@ StasisBtn.MouseButton1Click:Connect(function()
         end)
     else if stasisConn then stasisConn:Disconnect() stasisConn=nil end end
 end)
--- GOOF ADDED
+
+
+
+
+
 local goofConn=nil
 GoofBtn.MouseButton1Click:Connect(function()
     local on=GoofBtn.Text=="Goof: ON" on=not on
@@ -1007,15 +1011,31 @@ GoofBtn.MouseButton1Click:Connect(function()
         goofConn=RunService.Heartbeat:Connect(function()
             local c=player.Character local root=c and c:FindFirstChild("HumanoidRootPart")
             if not root then return end
+            
             for _,p in ipairs(Players:GetPlayers()) do
                 if p~=player and p.Character then
                     local pr=p.Character:FindFirstChild("HumanoidRootPart")
-                    if pr and (root.Position-pr.Position).Magnitude<=31 then
-                        
+                    if pr and (root.Position-pr.Position).Magnitude<=40 then
                         local angle=math.random()*math.pi*2
-                        local offset=Vector3.new(math.cos(angle)*40,0,math.sin(angle)*40)
-                        root.CFrame=CFrame.new(pr.Position+offset+Vector3.new(0,3,0))
-                        break
+                        root.CFrame=CFrame.new(pr.Position+Vector3.new(math.cos(angle)*45,3,math.sin(angle)*45))
+                        return
+                    end
+                end
+            end
+            
+            for _, container in ipairs(workspace:GetChildren()) do
+                if container.Name:find("SpawnedInToys") then
+                    for _, missile in ipairs(container:GetChildren()) do
+                        if missile.Name == "BombMissile" then
+                            local body = missile:FindFirstChild("Body")
+                                or missile:FindFirstChild("PositionPart")
+                                or missile:FindFirstChildWhichIsA("BasePart")
+                            if body and (root.Position-body.Position).Magnitude<=40 then
+                                local angle=math.random()*math.pi*2
+                                root.CFrame=CFrame.new(body.Position+Vector3.new(math.cos(angle)*45,3,math.sin(angle)*45))
+                                return
+                            end
+                        end
                     end
                 end
             end
